@@ -13,7 +13,9 @@ function getBot() {
 // Vercel Serverless Function Handler
 export default async function handler(req: any, res: any) {
   if (req.method === "GET") {
-    return res.status(200).send("🥗 NutriBot Webhook is alive and running!");
+    return res
+      .status(200)
+      .send("🥗 CalTrack (Cal) Webhook is alive and running!");
   }
 
   if (req.method !== "POST") {

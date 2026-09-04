@@ -31,16 +31,16 @@ export async function handleProfileCommand(ctx: Context) {
   const genderText = user.gender === "MALE" ? "👨 Laki-laki" : "👩 Perempuan";
 
   const response =
-    `👤 *PROFIL PENGGUNA* 👤\n\n` +
+    `*PROFIL PENGGUNA*\n\n` +
     `• *Username:* ${user.username ? "@" + user.username : "-"}\n` +
     `• *Jenis Kelamin:* ${genderText}\n` +
     `• *Umur:* ${user.age} tahun\n` +
     `• *Tinggi / Berat:* ${user.height} cm / ${user.weight} kg\n` +
-    `• *Skor BMI:* *${user.bmi}* (${metrics.bmiCategory})\n` +
+    `• *BMI:* *${user.bmi}* (${metrics.bmiCategory})\n` +
     `• *BMR / TDEE:* ${metrics.bmr} kkal / ${metrics.tdee} kkal\n` +
-    `• *Target Kalori Harian:* *${user.dailyCalorieTarget} kkal*\n` +
+    `• *Target Kalori:* *${user.dailyCalorieTarget} kkal/hari*\n` +
     `• *Zona Waktu:* ${user.timezone}\n\n` +
-    `Gunakan tombol di bawah jika ingin mengubah target kalori atau memperbarui data fisikmu.`;
+    `Pilih menu di bawah untuk mengubah target atau memperbarui profil.`;
 
   await ctx.reply(response, { parse_mode: "Markdown", reply_markup: keyboard });
 }

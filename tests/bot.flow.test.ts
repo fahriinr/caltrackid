@@ -77,7 +77,7 @@ describe("Bot Daily Recap & Workflows", () => {
 
     const userMessage = sentMessages.find((m) => m.chatId === 555001);
     expect(userMessage).toBeDefined();
-    expect(userMessage?.text).toContain("REKAP MALAM NUTRIBOT");
+    expect(userMessage?.text).toContain("REKAP HARIAN CALTRACK");
     expect(userMessage?.text).toContain("450 kkal");
     expect(userMessage?.text).toContain("2000 kkal");
     expect(userMessage?.text).toContain("Salad Buah & Dada Ayam");
@@ -122,10 +122,8 @@ describe("Bot Daily Recap & Workflows", () => {
 
     const userMessage = sentMessages.find((m) => m.chatId === 555002);
     expect(userMessage).toBeDefined();
-    expect(userMessage?.text).toContain("Asupan Melebihi Target");
+    expect(userMessage?.text).toContain("Status: Melebihi Target");
     expect(userMessage?.text).toContain("1900 kkal");
-    expect(userMessage?.text).toContain(
-      "melebihi target *1500 kkal* sebesar *400 kkal*",
-    );
+    expect(userMessage?.text).toContain("Kelebihan: *400 kkal*");
   });
 });

@@ -154,23 +154,22 @@ export async function processFoodAnalysis(
       },
     });
 
-    const noteDisplay = userNote ? `\n📝 *Catatanmu:* _${userNote}_` : "";
+    const noteDisplay = userNote ? `\n*Catatan:* _${userNote}_` : "";
 
     const confirmationKeyboard = new InlineKeyboard()
-      .text("✅ Sesuai & Simpan", "confirm_food_save")
+      .text("✓ Sesuai & Simpan", "confirm_food_save")
       .row()
-      .text("✏️ Koreksi / Ketik Manual", "correct_food_manual")
-      .text("❌ Batalkan", "cancel_food_entry");
+      .text("Koreksi / Ketik Manual", "correct_food_manual")
+      .text("Batalkan", "cancel_food_entry");
 
     const responseText =
-      `🔍 *HASIL DETEKSI MAKANAN* 🥗\n\n` +
-      `🍽️ *Nama Menu:* *${result.food_name}*\n` +
-      `📏 *Porsi:* ${result.portion_description}${noteDisplay}\n` +
-      `🔥 *Kalori:* *${result.calories} kkal*\n` +
-      `🥩 *Protein:* ${result.macros.protein_g}g | 🍚 *Karbo:* ${result.macros.carbs_g}g | 🥑 *Lemak:* ${result.macros.fat_g}g\n` +
-      `💡 *Catatan AI:* _${result.confidence_note}_\n\n` +
-      `❓ *Apakah informasi makanan di atas sudah sesuai?*\n` +
-      `Tekan *Sesuai & Simpan* untuk mencatat, atau *Koreksi* jika ingin mengetik manual.`;
+      `*ESTIMASI NUTRISI MAKANAN*\n\n` +
+      `*Menu:* ${result.food_name}\n` +
+      `*Porsi:* ${result.portion_description}${noteDisplay}\n\n` +
+      `*Kalori:* *${result.calories} kkal*\n` +
+      `*Makronutrisi:* Protein ${result.macros.protein_g}g · Karbo ${result.macros.carbs_g}g · Lemak ${result.macros.fat_g}g\n\n` +
+      `_Catatan: ${result.confidence_note}_\n\n` +
+      `Apakah informasi di atas sudah sesuai?`;
 
     try {
       await ctx.api.deleteMessage(ctx.chat!.id, processingMsg.message_id);
@@ -258,20 +257,19 @@ export async function handleConfirmFoodSaveCallback(ctx: Context) {
   }
 
   const responseKeyboard = new InlineKeyboard()
-    .text("📊 Cek Hari Ini (/today)", "action_today")
+    .text("Lihat Hari Ini (/today)", "action_today")
     .row()
-    .text("🗑️ Hapus Log Ini (Jika Salah)", `delete_log_${savedLog.id}`);
+    .text("Hapus Log Ini", `delete_log_${savedLog.id}`);
 
   const responseText =
-    `🎉 *Makanan Berhasil Dicatat!* 🥗\n\n` +
-    `🍽️ *Menu:* ${pendingFood.food_name}\n` +
-    `🔥 *Kalori:* +*${pendingFood.calories} kkal*\n` +
-    `🥩 *Makro:* P: ${pendingFood.macros.protein_g}g | C: ${pendingFood.macros.carbs_g}g | F: ${pendingFood.macros.fat_g}g\n\n` +
-    `➖➖➖➖➖➖➖➖➖➖\n` +
-    `📊 *Progres Hari Ini (${todayBounds.displayDate}):*\n` +
-    `🎯 *Total Asupan:* *${currentTotal}* / ${target} kkal\n` +
-    `${progressStatus}\n\n` +
-    `_Salah simpan? Tekan tombol di bawah untuk membatalkan/menghapus log ini._`;
+    `*MAKANAN BERHASIL DICATAT*\n\n` +
+    `*Menu:* ${pendingFood.food_name}\n` +
+    `*Kalori:* +*${pendingFood.calories} kkal*\n` +
+    `*Makro:* P ${pendingFood.macros.protein_g}g · K ${pendingFood.macros.carbs_g}g · L ${pendingFood.macros.fat_g}g\n\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `*Progres Hari Ini (${todayBounds.displayDate})*\n` +
+    `Total: *${currentTotal}* / ${target} kkal\n` +
+    `${progressStatus}`;
 
   await ctx.reply(responseText, {
     parse_mode: "Markdown",
@@ -417,20 +415,19 @@ export async function processTextFoodAnalysis(
     });
 
     const confirmationKeyboard = new InlineKeyboard()
-      .text("✅ Sesuai & Simpan", "confirm_food_save")
+      .text("✓ Sesuai & Simpan", "confirm_food_save")
       .row()
-      .text("✏️ Koreksi / Ketik Manual", "correct_food_manual")
-      .text("❌ Batalkan", "cancel_food_entry");
+      .text("Koreksi / Ketik Manual", "correct_food_manual")
+      .text("Batalkan", "cancel_food_entry");
 
     const responseText =
-      `🔍 *HASIL ESTIMASI MAKANAN (INPUT TEKS)* 🥗\n\n` +
-      `🍽️ *Nama Menu:* *${result.food_name || foodDescription}*\n` +
-      `📏 *Porsi:* ${result.portion_description}\n` +
-      `🔥 *Estimasi Kalori:* *${result.calories} kkal*\n` +
-      `🥩 *Protein:* ${result.macros.protein_g}g | 🍚 *Karbo:* ${result.macros.carbs_g}g | 🥑 *Lemak:* ${result.macros.fat_g}g\n` +
-      `💡 *Catatan AI:* _${result.confidence_note}_\n\n` +
-      `❓ *Apakah informasi makanan di atas sudah sesuai?*\n` +
-      `Tekan *Sesuai & Simpan* untuk mencatat ke kalori hari ini.`;
+      `*ESTIMASI NUTRISI (INPUT TEKS)*\n\n` +
+      `*Menu:* ${result.food_name || foodDescription}\n` +
+      `*Porsi:* ${result.portion_description}\n\n` +
+      `*Kalori:* *${result.calories} kkal*\n` +
+      `*Makronutrisi:* Protein ${result.macros.protein_g}g · Karbo ${result.macros.carbs_g}g · Lemak ${result.macros.fat_g}g\n\n` +
+      `_Catatan: ${result.confidence_note}_\n\n` +
+      `Apakah informasi di atas sudah sesuai?`;
 
     try {
       await ctx.api.deleteMessage(ctx.chat!.id, processingMsg.message_id);

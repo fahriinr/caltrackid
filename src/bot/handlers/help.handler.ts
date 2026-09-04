@@ -3,8 +3,8 @@ import { sessionRepository } from "../../repositories/session.repository.js";
 
 export async function handleHelpCommand(ctx: Context) {
   const helpText =
-    `🥗 *PANDUAN PENGGUNAAN NUTRIBOT* 🥗\n\n` +
-    `NutriBot adalah asisten pintar untuk mencatat & memantau asupan kalori harianmu secara otomatis menggunakan AI.\n\n` +
+    `🥗 *PANDUAN PENGGUNAAN CALTRACK (CAL)* 🥗\n\n` +
+    `CalTrack (panggil aja *Cal*) adalah asisten pintar untuk mencatat & memantau asupan kalori harianmu secara otomatis menggunakan AI.\n\n` +
     `📌 *Daftar Perintah (Commands):*\n` +
     `• /start - Memulai bot / pendaftaran profil fisik\n` +
     `• /today - Melihat ringkasan asupan kalori & menu hari ini\n` +
@@ -16,9 +16,9 @@ export async function handleHelpCommand(ctx: Context) {
     `📸 *Cara Mencatat Makanan:*\n` +
     `1. *Kirim Foto:* Cukup foto makananmu dan kirim ke chat ini (bisa ditambah catatan porsi/detail).\n` +
     `2. *Ketik Teks Langsung:* Jika lupa foto saat makan siang/pagi, langsung ketik nama makananmu atau gunakan /catat (contoh: _"tadi siang makan bakso urat 1 mangkok, es jeruk"_).\n` +
-    `3. *Konfirmasi Preview:* NutriBot akan menampilkan estimasi kalori & makro. Jika cocok tinggal tekan *Sesuai & Simpan*, jika kurang pas bisa diedit atau dikoreksi!\n` +
+    `3. *Konfirmasi Preview:* Cal akan menampilkan estimasi kalori & makro. Jika cocok tinggal tekan *Sesuai & Simpan*, jika kurang pas bisa diedit atau dikoreksi!\n` +
     `4. *Hapus / Edit Log:* Jika salah catat, kamu bisa hapus log makanan dari tombol setelah mencatat atau lewat menu /today.\n\n` +
-    `⏰ *Rekap Otomatis:* Bot akan mengirimkan laporan rekap harian setiap pukul *21:00 WIB*.`;
+    `⏰ *Rekap Otomatis:* Cal akan mengirimkan laporan rekap harian setiap pukul *21:00 WIB*.`;
 
   await ctx.reply(helpText, { parse_mode: "Markdown" });
 }

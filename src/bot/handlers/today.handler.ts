@@ -39,7 +39,7 @@ export async function handleTodayCommand(ctx: Context) {
   let keyboard: InlineKeyboard | undefined;
 
   if (summary.logs.length === 0) {
-    mealListText = `_Belum ada makanan yang dicatat hari ini._\n📸 _Kirim foto makananmu sekarang untuk mulai mencatat!_`;
+    mealListText = `_Belum ada makanan yang dicatat hari ini._\n_Kirim foto makanan atau ketik langsung untuk mencatat._`;
   } else {
     mealListText = summary.logs
       .map((log, index) => {
@@ -47,29 +47,28 @@ export async function handleTodayCommand(ctx: Context) {
         const portion = log.portionDescription
           ? ` (${log.portionDescription})`
           : "";
-        return `${index + 1}. *[${time}]* ${log.foodName}${portion}\n   └ 🔥 *${log.calories} kkal* (P: ${log.protein}g | C: ${log.carbs}g | F: ${log.fat}g)`;
+        return `${index + 1}. *[${time}]* ${log.foodName}${portion}\n   └ *${log.calories} kkal* (P: ${log.protein}g · K: ${log.carbs}g · L: ${log.fat}g)`;
       })
       .join("\n\n");
 
     keyboard = new InlineKeyboard().text(
-      "🗑️ Hapus / Koreksi Makanan Hari Ini",
+      "Hapus / Kelola Log Hari Ini",
       "action_manage_logs",
     );
   }
 
   const response =
-    `📊 *REKAP ASUPAN HARI INI* 🥗\n` +
-    `📅 *${todayBounds.displayDate}*\n\n` +
-    `🎯 *Target Kalori:* ${target} kkal\n` +
-    `🔥 *Total Kalori Masuk:* *${currentTotal} kkal*\n` +
+    `*REKAP ASUPAN HARI INI*\n` +
+    `_${todayBounds.displayDate}_\n\n` +
+    `*Target:* ${target} kkal\n` +
+    `*Total Masuk:* *${currentTotal} kkal*\n` +
     `${statusText}\n\n` +
-    `🥩 *Total Makronutrisi Hari Ini:*\n` +
-    `• Protein: *${summary.totalProtein} g*\n` +
-    `• Karbohidrat: *${summary.totalCarbs} g*\n` +
-    `• Lemak: *${summary.totalFat} g*\n\n` +
-    `📋 *Daftar Menu yang Dikonsumsi:*\n` +
-    `${mealListText}\n\n` +
-    `💡 _Tips: Kirim foto setiap kali kamu makan untuk melacak kalori secara real-time!_`;
+    `*Total Makronutrisi*\n` +
+    `• Protein: *${summary.totalProtein}g*\n` +
+    `• Karbohidrat: *${summary.totalCarbs}g*\n` +
+    `• Lemak: *${summary.totalFat}g*\n\n` +
+    `*Daftar Menu:*\n` +
+    `${mealListText}`;
 
   await ctx.reply(response, {
     parse_mode: "Markdown",

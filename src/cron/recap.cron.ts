@@ -31,40 +31,43 @@ export async function runDailyRecap(bot: Bot): Promise<void> {
 
       if (summary.logs.length === 0) {
         message =
-          `🌙 *REKAP MALAM NUTRIBOT* 🥗\n` +
-          `📅 *${todayBounds.displayDate}*\n\n` +
-          `Kamu belum mencatat asupan makanan apa pun hari ini.\n` +
-          `🎯 Target harianmu: *${target} kkal*.\n\n` +
-          `_Jangan lupa foto dan catat makananmu besok agar perjalanan kesehatanmu tetap terpantau!_ ✨`;
+          `*REKAP MALAM CALTRACK*\n` +
+          `_${todayBounds.displayDate}_\n\n` +
+          `Belum ada asupan makanan yang tercatat hari ini.\n` +
+          `Target harian: *${target} kkal*.\n\n` +
+          `_Besok jangan lupa kirim foto atau chat Cal ya agar asupanmu tetap terpantau._`;
       } else {
         let statusEvaluation = "";
         if (diff >= 0) {
           statusEvaluation =
-            `🎉 *Bagus Sekali!*\n` +
-            `Total asupanmu hari ini *${currentTotal} kkal* dari target *${target} kkal*.\n` +
-            `Kamu berada dalam batas aman dengan sisa *${diff} kkal*.`;
+            `*Status: Sesuai Target*\n` +
+            `Total asupan: *${currentTotal} kkal* / Target: *${target} kkal*\n` +
+            `Sisa kuota: *${diff} kkal*`;
         } else {
           statusEvaluation =
-            `⚠️ *Perhatian: Asupan Melebihi Target*\n` +
-            `Total asupanmu hari ini *${currentTotal} kkal*, melebihi target *${target} kkal* sebesar *${Math.abs(diff)} kkal*.`;
+            `*Status: Melebihi Target*\n` +
+            `Total asupan: *${currentTotal} kkal* / Target: *${target} kkal*\n` +
+            `Kelebihan: *${Math.abs(diff)} kkal*`;
         }
 
         const mealList = summary.logs
           .map((log, idx) => {
             const time = formatTimeInTimezone(log.loggedAt, timezone);
-            return `${idx + 1}. [${time}] ${log.foodName} (${log.calories} kkal)`;
+            return `${idx + 1}. [${time}] ${log.foodName} — *${log.calories} kkal*`;
           })
           .join("\n");
 
         message =
-          `🌙 *REKAP MALAM NUTRIBOT* (21:00 WIB) 🥗\n` +
-          `📅 *${todayBounds.displayDate}*\n\n` +
+          `*REKAP HARIAN CALTRACK* (21:00 WIB)\n` +
+          `_${todayBounds.displayDate}_\n\n` +
           `${statusEvaluation}\n\n` +
-          `🥩 *Total Nutrisi:*\n` +
-          `• Protein: *${summary.totalProtein}g* | Karbo: *${summary.totalCarbs}g* | Lemak: *${summary.totalFat}g*\n\n` +
-          `📋 *Menu Hari Ini:*\n` +
+          `*Ringkasan Makronutrisi*\n` +
+          `• Protein: *${summary.totalProtein}g*\n` +
+          `• Karbohidrat: *${summary.totalCarbs}g*\n` +
+          `• Lemak: *${summary.totalFat}g*\n\n` +
+          `*Daftar Menu:*\n` +
           `${mealList}\n\n` +
-          `Tetap semangat dan istirahat yang cukup untuk besok! 💤`;
+          `_Selamat beristirahat dan sampai jumpa besok!_ — Cal`;
       }
 
       await bot.api.sendMessage(user.id, message, { parse_mode: "Markdown" });

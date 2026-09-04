@@ -1,6 +1,7 @@
 import { Bot } from "grammy";
 import { getEnv } from "../config/env.js";
 import { createThrottleMiddleware } from "./middlewares/throttle.middleware.js";
+import { createLoggerMiddleware } from "./middlewares/logger.middleware.js";
 import {
   handleStartCommand,
   startOnboardingFlow,
@@ -42,7 +43,8 @@ export function createBot(token?: string): Bot {
   const botToken = token || getEnv().TELEGRAM_BOT_TOKEN;
   const bot = new Bot(botToken);
 
-  // Apply rate limiter middleware
+  // Apply middlewares
+  bot.use(createLoggerMiddleware());
   bot.use(createThrottleMiddleware());
 
   // Commands
