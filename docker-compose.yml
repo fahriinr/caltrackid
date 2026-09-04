@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  nutribot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-calorie-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - DEFAULT_TIMEZONE=Asia/Jakarta
+      - TZ=Asia/Jakarta

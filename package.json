@@ -1,0 +1,49 @@
+{
+  "name": "nutribot-telegram-calorie-tracker",
+  "version": "1.0.0",
+  "description": "Telegram AI Calorie Tracker Bot using Google Gemini 2.5 Flash & Drizzle ORM",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx src/db/migrate.ts"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "calorie-tracker",
+    "gemini",
+    "ai",
+    "nutrition"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^0.3.1",
+    "@types/pg": "^8.23.1",
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.39.3",
+    "grammy": "^1.34.1",
+    "luxon": "^3.5.0",
+    "node-cron": "^3.0.3",
+    "postgres": "^3.4.9",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^22.13.5",
+    "@types/node-cron": "^3.0.11",
+    "drizzle-kit": "^0.30.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}
