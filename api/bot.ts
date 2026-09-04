@@ -1,16 +1,13 @@
 import { webhookCallback } from "grammy";
 import { createBot } from "../src/bot/bot.js";
-import { runMigrations } from "../src/db/migrate.js";
 
-const bot = createBot();
-
-// Ensure DB schema migrations have run once per cold start
-let migrated = false;
-async function ensureMigrated() {
-  if (!migrated) {
-    await runMigrations();
-    migrated = true;
+// Lazy bot instantiation to prevent top-level unhandled initialization errors
+let botInstance: ReturnType<typeof createBot> | null = null;
+function getBot() {
+  if (!botInstance) {
+    botInstance = createBot();
   }
+  return botInstance;
 }
 
 // Vercel Serverless Function Handler
@@ -24,10 +21,11 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    await ensureMigrated();
-    return await webhookCallback(bot, "express")(req, res);
+    const bot = getBot();
+    const handleUpdate = webhookCallback(bot, "express");
+    return await handleUpdate(req, res);
   } catch (err: any) {
-    console.error("Webhook processing error:", err);
-    return res.status(500).json({ error: err.message || "Internal Server Error" });
+    console.error("Webhook execution error:", err);
+    return res.status(200).json({ error: err.message || "Error handled" });
   }
 }
