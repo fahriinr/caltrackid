@@ -22,7 +22,8 @@ export default async function handler(req: any, res: any) {
 
   try {
     const bot = getBot();
-    const handleUpdate = webhookCallback(bot, "express");
+    // Vercel Node.js Serverless Functions use Next.js/Vercel request/response format
+    const handleUpdate = webhookCallback(bot, "next-js");
     return await handleUpdate(req, res);
   } catch (err: any) {
     console.error("Webhook execution error:", err);
