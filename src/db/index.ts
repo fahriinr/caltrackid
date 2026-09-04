@@ -13,12 +13,16 @@ export function getDatabase(dbUrl?: string): PostgresJsDatabase<typeof schema> {
 
   const url = dbUrl || getEnv().DATABASE_URL;
 
-  // prepare: false is required for Supabase transaction pooler (port 6543) and also fully compatible with session pooler (port 5432)
+  // Serverless-optimized settings: max 1 connection per lambda container, zero prepare overhead
+  const isServerless =
+    process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+
   clientInstance = postgres(url, {
     prepare: false,
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 15,
+    max: isServerless ? 1 : 10,
+    idle_timeout: isServerless ? 5 : 20,
+    connect_timeout: 10,
+    ssl: { rejectUnauthorized: false },
   });
 
   dbInstance = drizzle(clientInstance, { schema });
