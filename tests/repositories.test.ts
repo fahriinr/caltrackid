@@ -167,6 +167,50 @@ describe("Database Repositories with PostgreSQL", () => {
       expect(summary.logs).toHaveLength(2);
       expect(summary.logs[0].foodName).toBe("Nasi Goreng Spesial");
     });
+
+    it("should soft delete a food log and exclude it from daily summary", async () => {
+      await userRepo.createOrUpdate({
+        id: 100,
+        gender: "MALE",
+        age: 25,
+        height: 170,
+        weight: 65,
+        bmi: 22.5,
+        dailyCalorieTarget: 2000,
+        status: "ACTIVE",
+      });
+
+      const log = await foodRepo.create({
+        userId: 100,
+        foodName: "Snack Keripik",
+        portionDescription: "1 bungkus",
+        calories: 300,
+        protein: 2,
+        carbs: 35,
+        fat: 15,
+      });
+
+      const bounds = getTodayBounds("Asia/Jakarta");
+      let summary = await foodRepo.getDailySummary(
+        100,
+        bounds.startDate,
+        bounds.endDate,
+      );
+      expect(summary.totalCalories).toBe(300);
+
+      // Perform soft delete
+      const deleted = await foodRepo.softDelete(log.id, 100);
+      expect(deleted?.isDeleted).toBe(true);
+
+      // Re-check summary: should now exclude the deleted food log
+      summary = await foodRepo.getDailySummary(
+        100,
+        bounds.startDate,
+        bounds.endDate,
+      );
+      expect(summary.totalCalories).toBe(0);
+      expect(summary.logs).toHaveLength(0);
+    });
   });
 
   describe("SessionRepository", () => {

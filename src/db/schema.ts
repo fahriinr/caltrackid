@@ -6,6 +6,7 @@ import {
   doublePrecision,
   text,
   timestamp,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -41,6 +42,7 @@ export const foodLogs = pgTable("food_logs", {
   carbs: doublePrecision("carbs").default(0).notNull(),
   fat: doublePrecision("fat").default(0).notNull(),
   confidenceNote: text("confidence_note"),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
   loggedAt: timestamp("logged_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

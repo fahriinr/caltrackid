@@ -11,9 +11,24 @@ export type SessionStep =
   | "ONBOARDING_TARGET_CHOICE"
   | "AWAITING_CUSTOM_TARGET"
   | "AWAITING_FOOD_NOTE"
+  | "AWAITING_FOOD_CONFIRMATION"
+  | "AWAITING_FOOD_CORRECTION"
   | "AWAITING_TARGET_UPDATE";
 
-export interface OnboardingTempData {
+export interface PendingFoodAnalysis {
+  food_name: string;
+  portion_description: string;
+  calories: number;
+  macros: {
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+  };
+  confidence_note: string;
+  userNote?: string;
+}
+
+export interface SessionTempData {
   gender?: "MALE" | "FEMALE";
   age?: number;
   height?: number;
@@ -22,12 +37,15 @@ export interface OnboardingTempData {
   recommendedCalories?: number;
   tdee?: number;
   bmr?: number;
+  pendingFood?: PendingFoodAnalysis;
 }
+
+export type OnboardingTempData = SessionTempData;
 
 export interface SessionData {
   step: SessionStep;
   pendingPhotoId?: string | null;
-  tempData?: OnboardingTempData | null;
+  tempData?: SessionTempData | null;
 }
 
 export class SessionRepository {
@@ -44,7 +62,7 @@ export class SessionRepository {
       return { step: "IDLE", pendingPhotoId: null, tempData: null };
     }
 
-    let parsedTemp: OnboardingTempData | null = null;
+    let parsedTemp: SessionTempData | null = null;
     if (row.tempData) {
       try {
         parsedTemp = JSON.parse(row.tempData);

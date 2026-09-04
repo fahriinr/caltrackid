@@ -27,11 +27,32 @@ export class FoodLogRepository {
       carbs: data.carbs ?? 0,
       fat: data.fat ?? 0,
       confidenceNote: data.confidenceNote ?? null,
+      isDeleted: false,
       loggedAt: data.loggedAt || new Date(),
     };
 
     const rows = await db.insert(foodLogs).values(newEntry).returning();
     return rows[0];
+  }
+
+  async findById(id: string): Promise<FoodLog | null> {
+    const db = getDatabase();
+    const rows = await db
+      .select()
+      .from(foodLogs)
+      .where(eq(foodLogs.id, id))
+      .limit(1);
+    return rows[0] || null;
+  }
+
+  async softDelete(id: string, userId: number): Promise<FoodLog | null> {
+    const db = getDatabase();
+    const rows = await db
+      .update(foodLogs)
+      .set({ isDeleted: true })
+      .where(and(eq(foodLogs.id, id), eq(foodLogs.userId, userId)))
+      .returning();
+    return rows[0] || null;
   }
 
   async getLogsByDateRange(
@@ -46,6 +67,7 @@ export class FoodLogRepository {
       .where(
         and(
           eq(foodLogs.userId, userId),
+          eq(foodLogs.isDeleted, false), // Only non-deleted logs
           gte(foodLogs.loggedAt, startDate),
           lte(foodLogs.loggedAt, endDate),
         ),

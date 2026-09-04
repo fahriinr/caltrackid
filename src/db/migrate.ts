@@ -33,8 +33,14 @@ export async function runMigrations(dbUrl?: string): Promise<void> {
       carbs DOUBLE PRECISION NOT NULL DEFAULT 0,
       fat DOUBLE PRECISION NOT NULL DEFAULT 0,
       confidence_note TEXT,
+      is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
       logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  // Ensure is_deleted column exists on existing food_logs table
+  await db.execute(sql`
+    ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
   `);
 
   await db.execute(sql`
@@ -50,6 +56,9 @@ export async function runMigrations(dbUrl?: string): Promise<void> {
   // Create indexes for faster queries
   await db.execute(
     sql`CREATE INDEX IF NOT EXISTS idx_food_logs_user_logged ON food_logs(user_id, logged_at);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_food_logs_user_deleted ON food_logs(user_id, is_deleted);`,
   );
   await db.execute(
     sql`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);`,

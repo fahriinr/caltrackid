@@ -4,14 +4,25 @@ import { getEnv } from "../config/env.js";
 
 export const foodAnalysisSchema = z.object({
   food_name: z.string().describe("Nama ringkas hidangan atau menu utama"),
-  portion_description: z.string().describe("Deskripsi porsi yang teridentifikasi"),
-  calories: z.number().int().nonnegative().describe("Estimasi total kalori dalam kkal"),
+  portion_description: z
+    .string()
+    .describe("Deskripsi porsi yang teridentifikasi"),
+  calories: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("Estimasi total kalori dalam kkal"),
   macros: z.object({
     protein_g: z.number().nonnegative().describe("Estimasi protein dalam gram"),
-    carbs_g: z.number().nonnegative().describe("Estimasi karbohidrat dalam gram"),
+    carbs_g: z
+      .number()
+      .nonnegative()
+      .describe("Estimasi karbohidrat dalam gram"),
     fat_g: z.number().nonnegative().describe("Estimasi lemak dalam gram"),
   }),
-  confidence_note: z.string().describe("Catatan singkat mengenai estimasi nutrisi"),
+  confidence_note: z
+    .string()
+    .describe("Catatan singkat mengenai estimasi nutrisi"),
 });
 
 export type FoodAnalysisResult = z.infer<typeof foodAnalysisSchema>;
@@ -29,7 +40,7 @@ export class GeminiService {
   private ai: GoogleGenAI;
   private modelName: string;
 
-  constructor(apiKey?: string, modelName: string = "gemini-2.5-flash") {
+  constructor(apiKey?: string, modelName: string = "gemini-3.6-flash") {
     const key = apiKey || getEnv().GEMINI_API_KEY;
     this.ai = new GoogleGenAI({ apiKey: key });
     this.modelName = modelName;
@@ -41,11 +52,12 @@ export class GeminiService {
   async analyzeFoodImage(
     imageBuffer: Buffer,
     mimeType: string = "image/jpeg",
-    userNote?: string
+    userNote?: string,
   ): Promise<FoodAnalysisResult> {
-    const promptText = userNote && userNote.trim().length > 0
-      ? `User provided context/note about this food: "${userNote.trim()}". Please analyze the image and the note to estimate the nutritional breakdown accurately.`
-      : `Please analyze this food image and estimate the nutritional breakdown accurately.`;
+    const promptText =
+      userNote && userNote.trim().length > 0
+        ? `User provided context/note about this food: "${userNote.trim()}". Please analyze the image and the note to estimate the nutritional breakdown accurately.`
+        : `Please analyze this food image and estimate the nutritional breakdown accurately.`;
 
     const base64Data = imageBuffer.toString("base64");
 
@@ -119,11 +131,97 @@ export class GeminiService {
 
     try {
       // In case there are markdown code fences despite responseMimeType
-      const cleanJson = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+      const cleanJson = text
+        .replace(/^```json\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
       const parsed = JSON.parse(cleanJson);
       return foodAnalysisSchema.parse(parsed);
     } catch (parseError) {
       console.error("Failed to parse Gemini response JSON:", text, parseError);
+      throw new Error("Gagal mengurai respons nutrisi dari Gemini API.");
+    }
+  }
+
+  /**
+   * Analyzes food from a pure textual description (e.g. "Tadi siang makan nasi padang rendang dan es teh tawar").
+   */
+  async analyzeFoodText(textDescription: string): Promise<FoodAnalysisResult> {
+    const promptText = `Estimate the nutritional breakdown for this food/beverage described by the user: "${textDescription.trim()}". Identify the components, estimate standard portion sizes, calculate calories in kcal, and estimate macronutrients (protein, carbs, fat in grams).`;
+
+    const response = await this.ai.models.generateContent({
+      model: this.modelName,
+      contents: [promptText],
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            food_name: {
+              type: Type.STRING,
+              description: "Nama ringkas hidangan atau menu utama",
+            },
+            portion_description: {
+              type: Type.STRING,
+              description: "Deskripsi porsi yang teridentifikasi",
+            },
+            calories: {
+              type: Type.INTEGER,
+              description: "Estimasi total kalori dalam kkal",
+            },
+            macros: {
+              type: Type.OBJECT,
+              properties: {
+                protein_g: {
+                  type: Type.NUMBER,
+                  description: "Protein dalam gram",
+                },
+                carbs_g: {
+                  type: Type.NUMBER,
+                  description: "Karbohidrat dalam gram",
+                },
+                fat_g: {
+                  type: Type.NUMBER,
+                  description: "Lemak dalam gram",
+                },
+              },
+              required: ["protein_g", "carbs_g", "fat_g"],
+            },
+            confidence_note: {
+              type: Type.STRING,
+              description: "Catatan estimasi nutrisi",
+            },
+          },
+          required: [
+            "food_name",
+            "portion_description",
+            "calories",
+            "macros",
+            "confidence_note",
+          ],
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("No response returned from Gemini API");
+    }
+
+    try {
+      const cleanJson = text
+        .replace(/^```json\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+      const parsed = JSON.parse(cleanJson);
+      return foodAnalysisSchema.parse(parsed);
+    } catch (parseError) {
+      console.error(
+        "Failed to parse Gemini text response JSON:",
+        text,
+        parseError,
+      );
       throw new Error("Gagal mengurai respons nutrisi dari Gemini API.");
     }
   }
