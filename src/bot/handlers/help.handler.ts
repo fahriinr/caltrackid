@@ -8,6 +8,7 @@ export async function handleHelpCommand(ctx: Context) {
     `📌 *Daftar Perintah (Commands):*\n` +
     `• /start - Memulai bot / pendaftaran profil fisik\n` +
     `• /today - Melihat ringkasan asupan kalori & menu hari ini\n` +
+    `• /week - Melihat rekap kalori per hari selama 7 hari terakhir\n` +
     `• /catat <makanan> - Mencatat makanan via teks (misal lupa foto)\n` +
     `• /profile - Melihat profil fisik, BMI, BMR, dan target kalori\n` +
     `• /settarget - Mengubah batas target kalori harianmu\n` +

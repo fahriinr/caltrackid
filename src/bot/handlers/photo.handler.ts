@@ -31,9 +31,12 @@ export async function handlePhotoReceived(ctx: Context) {
     return;
   }
 
-  // Get highest resolution photo (last element in array)
-  const highestPhoto = photos[photos.length - 1];
-  const fileId = highestPhoto.file_id;
+  // Choose optimal resolution for AI vision (fast download & fast Gemini token processing)
+  // Telegram sends photos sorted by size ascending: [thumb, small, medium, original]
+  // Medium/Large (~800-1280px) is the sweet spot for accurate food AI without heavy payload lag
+  const optimalPhoto =
+    photos.length >= 3 ? photos[photos.length - 2] : photos[photos.length - 1];
+  const fileId = optimalPhoto.file_id;
 
   // If user included a caption with the photo directly, we can process immediately!
   const caption = ctx.message?.caption?.trim();
@@ -112,6 +115,9 @@ export async function processFoodAnalysis(
     await ctx.reply("⚠️ Data pengguna tidak ditemukan. Silakan ketik /start.");
     return;
   }
+
+  // Send typing chat action to keep Telegram connection active
+  ctx.replyWithChatAction("typing").catch(() => {});
 
   const processingMsg = await ctx.reply(
     `⏳ *Sedang menganalisis nutrisi makananmu dengan AI...*\nMohon tunggu beberapa detik...`,
@@ -384,6 +390,9 @@ export async function processTextFoodAnalysis(
     );
     return;
   }
+
+  // Send typing action to Telegram
+  ctx.replyWithChatAction("typing").catch(() => {});
 
   const processingMsg = await ctx.reply(
     `⏳ *Sedang menganalisis nutrisi "${foodDescription}" dengan AI...*\nMohon tunggu beberapa detik...`,

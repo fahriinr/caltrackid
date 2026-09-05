@@ -1,10 +1,13 @@
 {
   "version": 2,
   "regions": ["sin1"],
-  "crons": [
-    {
-      "path": "/api/recap",
-      "schedule": "0 14 * * *"
+  "functions": {
+    "api/bot.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/recap.ts": {
+      "maxDuration": 60
     }
-  ]
+  }
 }

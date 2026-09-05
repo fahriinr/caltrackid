@@ -8,7 +8,10 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
   DATABASE_URL: z.string().default("./data/nutribot.db"),
   DEFAULT_TIMEZONE: z.string().default("Asia/Jakarta"),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  CRON_SECRET: z.string().optional(),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 });
 
 export type Env = z.infer<typeof envSchema>;

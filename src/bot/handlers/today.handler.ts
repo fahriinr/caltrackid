@@ -40,6 +40,10 @@ export async function handleTodayCommand(ctx: Context) {
 
   if (summary.logs.length === 0) {
     mealListText = `_Belum ada makanan yang dicatat hari ini._\n_Kirim foto makanan atau ketik langsung untuk mencatat._`;
+    keyboard = new InlineKeyboard().text(
+      "📅 Rekap 7 Hari (/week)",
+      "action_week",
+    );
   } else {
     mealListText = summary.logs
       .map((log, index) => {
@@ -51,10 +55,10 @@ export async function handleTodayCommand(ctx: Context) {
       })
       .join("\n\n");
 
-    keyboard = new InlineKeyboard().text(
-      "Hapus / Kelola Log Hari Ini",
-      "action_manage_logs",
-    );
+    keyboard = new InlineKeyboard()
+      .text("📅 Rekap 7 Hari (/week)", "action_week")
+      .row()
+      .text("Hapus / Kelola Log Hari Ini", "action_manage_logs");
   }
 
   const response =

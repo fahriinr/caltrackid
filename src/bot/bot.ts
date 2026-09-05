@@ -27,6 +27,7 @@ import {
   handleTodayCommand,
   handleManageLogsCallback,
 } from "./handlers/today.handler.js";
+import { handleWeekCommand } from "./handlers/week.handler.js";
 import {
   handleProfileCommand,
   handleSetTargetCommand,
@@ -50,6 +51,7 @@ export function createBot(token?: string): Bot {
   // Commands
   bot.command("start", handleStartCommand);
   bot.command("today", handleTodayCommand);
+  bot.command(["week", "minggu"], handleWeekCommand);
   bot.command("profile", handleProfileCommand);
   bot.command("settarget", handleSetTargetCommand);
   bot.command("help", handleHelpCommand);
@@ -112,6 +114,10 @@ export function createBot(token?: string): Bot {
   bot.callbackQuery("action_today", async (ctx) => {
     await ctx.answerCallbackQuery();
     await handleTodayCommand(ctx);
+  });
+  bot.callbackQuery("action_week", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleWeekCommand(ctx);
   });
   bot.callbackQuery("action_manage_logs", handleManageLogsCallback);
 
@@ -201,7 +207,11 @@ export async function setupBotCommands(bot: Bot) {
     await bot.api.setMyCommands([
       {
         command: "today",
-        description: "Lihat rekap kalori & nutrisi hari ini",
+        description: "Rekap kalori & nutrisi hari ini",
+      },
+      {
+        command: "week",
+        description: "Rekap kalori per hari selama 7 hari",
       },
       {
         command: "catat",
