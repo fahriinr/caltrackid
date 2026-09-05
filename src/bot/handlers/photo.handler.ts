@@ -176,7 +176,7 @@ export async function processFoodAnalysis(
       .createLog({
         userId,
         type: "PHOTO",
-        model: "gemini-3.6-flash",
+        model: "gemini-3.5-flash-lite",
         status: "SUCCESS",
         durationMs,
       })
@@ -235,7 +235,7 @@ export async function processFoodAnalysis(
       .createLog({
         userId,
         type: "PHOTO",
-        model: "gemini-3.6-flash",
+        model: "gemini-3.5-flash-lite",
         status: "FAILED",
         durationMs,
         errorMessage: error?.message || "Unknown error",
@@ -464,7 +464,7 @@ export async function processTextFoodAnalysis(
       .createLog({
         userId,
         type: "TEXT",
-        model: "gemini-3.6-flash",
+        model: "gemini-3.5-flash-lite",
         status: "SUCCESS",
         durationMs,
       })
@@ -520,7 +520,7 @@ export async function processTextFoodAnalysis(
       .createLog({
         userId,
         type: "TEXT",
-        model: "gemini-3.6-flash",
+        model: "gemini-3.5-flash-lite",
         status: "FAILED",
         durationMs,
         errorMessage: error?.message || "Unknown error",

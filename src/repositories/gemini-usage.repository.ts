@@ -27,7 +27,7 @@ export class GeminiUsageRepository {
       id,
       userId: data.userId ?? null,
       type: data.type,
-      model: data.model || "gemini-3.6-flash",
+      model: data.model || "gemini-3.5-flash-lite",
       status: data.status || "SUCCESS",
       durationMs: data.durationMs || 0,
       errorMessage: data.errorMessage ?? null,

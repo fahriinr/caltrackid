@@ -40,10 +40,49 @@ export class GeminiService {
   private ai: GoogleGenAI;
   private modelName: string;
 
-  constructor(apiKey?: string, modelName: string = "gemini-3.6-flash") {
+  constructor(apiKey?: string, modelName: string = "gemini-3.5-flash-lite") {
     const key = apiKey || getEnv().GEMINI_API_KEY;
     this.ai = new GoogleGenAI({ apiKey: key });
     this.modelName = modelName;
+  }
+
+  /**
+   * Helper function to execute Gemini API calls with auto-retry on 503/429/UNAVAILABLE errors
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 2,
+    delayMs: number = 2000,
+  ): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        return await operation();
+      } catch (err: any) {
+        lastError = err;
+        const errMessage = String(err?.message || "");
+        const status = err?.status || err?.code || "";
+        const isUnavailable =
+          status === 503 ||
+          status === 429 ||
+          status === "UNAVAILABLE" ||
+          errMessage.includes("503") ||
+          errMessage.includes("high demand") ||
+          errMessage.includes("UNAVAILABLE") ||
+          errMessage.includes("Resource has been exhausted");
+
+        if (isUnavailable && attempt <= maxRetries) {
+          console.warn(
+            `⚠️ Gemini API busy (503/high demand). Retrying attempt ${attempt}/${maxRetries} after ${delayMs}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        }
+
+        throw err;
+      }
+    }
+    throw lastError;
   }
 
   /**
@@ -61,68 +100,70 @@ export class GeminiService {
 
     const base64Data = imageBuffer.toString("base64");
 
-    const response = await this.ai.models.generateContent({
-      model: this.modelName,
-      contents: [
-        {
-          inlineData: {
-            mimeType,
-            data: base64Data,
+    const response = await this.executeWithRetry(() =>
+      this.ai.models.generateContent({
+        model: this.modelName,
+        contents: [
+          {
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
           },
-        },
-        promptText,
-      ],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            food_name: {
-              type: Type.STRING,
-              description: "Nama ringkas hidangan atau menu utama",
-            },
-            portion_description: {
-              type: Type.STRING,
-              description: "Deskripsi porsi yang teridentifikasi",
-            },
-            calories: {
-              type: Type.INTEGER,
-              description: "Estimasi total kalori dalam kkal",
-            },
-            macros: {
-              type: Type.OBJECT,
-              properties: {
-                protein_g: {
-                  type: Type.NUMBER,
-                  description: "Protein dalam gram",
-                },
-                carbs_g: {
-                  type: Type.NUMBER,
-                  description: "Karbohidrat dalam gram",
-                },
-                fat_g: {
-                  type: Type.NUMBER,
-                  description: "Lemak dalam gram",
-                },
+          promptText,
+        ],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              food_name: {
+                type: Type.STRING,
+                description: "Nama ringkas hidangan atau menu utama",
               },
-              required: ["protein_g", "carbs_g", "fat_g"],
+              portion_description: {
+                type: Type.STRING,
+                description: "Deskripsi porsi yang teridentifikasi",
+              },
+              calories: {
+                type: Type.INTEGER,
+                description: "Estimasi total kalori dalam kkal",
+              },
+              macros: {
+                type: Type.OBJECT,
+                properties: {
+                  protein_g: {
+                    type: Type.NUMBER,
+                    description: "Protein dalam gram",
+                  },
+                  carbs_g: {
+                    type: Type.NUMBER,
+                    description: "Karbohidrat dalam gram",
+                  },
+                  fat_g: {
+                    type: Type.NUMBER,
+                    description: "Lemak dalam gram",
+                  },
+                },
+                required: ["protein_g", "carbs_g", "fat_g"],
+              },
+              confidence_note: {
+                type: Type.STRING,
+                description: "Catatan estimasi nutrisi",
+              },
             },
-            confidence_note: {
-              type: Type.STRING,
-              description: "Catatan estimasi nutrisi",
-            },
+            required: [
+              "food_name",
+              "portion_description",
+              "calories",
+              "macros",
+              "confidence_note",
+            ],
           },
-          required: [
-            "food_name",
-            "portion_description",
-            "calories",
-            "macros",
-            "confidence_note",
-          ],
         },
-      },
-    });
+      }),
+    );
 
     const text = response.text;
     if (!text) {
@@ -149,60 +190,62 @@ export class GeminiService {
   async analyzeFoodText(textDescription: string): Promise<FoodAnalysisResult> {
     const promptText = `Estimate the nutritional breakdown for this food/beverage described by the user: "${textDescription.trim()}". Identify the components, estimate standard portion sizes, calculate calories in kcal, and estimate macronutrients (protein, carbs, fat in grams).`;
 
-    const response = await this.ai.models.generateContent({
-      model: this.modelName,
-      contents: [promptText],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            food_name: {
-              type: Type.STRING,
-              description: "Nama ringkas hidangan atau menu utama",
-            },
-            portion_description: {
-              type: Type.STRING,
-              description: "Deskripsi porsi yang teridentifikasi",
-            },
-            calories: {
-              type: Type.INTEGER,
-              description: "Estimasi total kalori dalam kkal",
-            },
-            macros: {
-              type: Type.OBJECT,
-              properties: {
-                protein_g: {
-                  type: Type.NUMBER,
-                  description: "Protein dalam gram",
-                },
-                carbs_g: {
-                  type: Type.NUMBER,
-                  description: "Karbohidrat dalam gram",
-                },
-                fat_g: {
-                  type: Type.NUMBER,
-                  description: "Lemak dalam gram",
-                },
+    const response = await this.executeWithRetry(() =>
+      this.ai.models.generateContent({
+        model: this.modelName,
+        contents: [promptText],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              food_name: {
+                type: Type.STRING,
+                description: "Nama ringkas hidangan atau menu utama",
               },
-              required: ["protein_g", "carbs_g", "fat_g"],
+              portion_description: {
+                type: Type.STRING,
+                description: "Deskripsi porsi yang teridentifikasi",
+              },
+              calories: {
+                type: Type.INTEGER,
+                description: "Estimasi total kalori dalam kkal",
+              },
+              macros: {
+                type: Type.OBJECT,
+                properties: {
+                  protein_g: {
+                    type: Type.NUMBER,
+                    description: "Protein dalam gram",
+                  },
+                  carbs_g: {
+                    type: Type.NUMBER,
+                    description: "Karbohidrat dalam gram",
+                  },
+                  fat_g: {
+                    type: Type.NUMBER,
+                    description: "Lemak dalam gram",
+                  },
+                },
+                required: ["protein_g", "carbs_g", "fat_g"],
+              },
+              confidence_note: {
+                type: Type.STRING,
+                description: "Catatan estimasi nutrisi",
+              },
             },
-            confidence_note: {
-              type: Type.STRING,
-              description: "Catatan estimasi nutrisi",
-            },
+            required: [
+              "food_name",
+              "portion_description",
+              "calories",
+              "macros",
+              "confidence_note",
+            ],
           },
-          required: [
-            "food_name",
-            "portion_description",
-            "calories",
-            "macros",
-            "confidence_note",
-          ],
         },
-      },
-    });
+      }),
+    );
 
     const text = response.text;
     if (!text) {

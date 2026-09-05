@@ -44,7 +44,7 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     await usageRepo.createLog({
       userId: 7771,
       type: "PHOTO",
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       status: "SUCCESS",
       durationMs: 1450,
     });
@@ -52,7 +52,7 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     await usageRepo.createLog({
       userId: 7771,
       type: "PHOTO",
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       status: "SUCCESS",
       durationMs: 1200,
     });
@@ -60,7 +60,7 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     await usageRepo.createLog({
       userId: 7772,
       type: "TEXT",
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       status: "SUCCESS",
       durationMs: 850,
     });
