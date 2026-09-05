@@ -1,10 +1,9 @@
 import { Keyboard } from "grammy";
 
 /**
- * Returns the persistent reply keyboard for bottom menu navigation.
- * Buttons:
- * Row 1: [🍽️ Catat Makanan] [📊 Rekap Hari Ini]
- * Row 2: [👤 Profile] [❓ Help]
+ * Returns the toggleable reply keyboard for bottom menu navigation.
+ * Uses .resized() without .persistent() so the keyboard icon stays visible next to attachment icon,
+ * allowing users to freely open and close/hide the menu.
  */
 export function getMainReplyKeyboard(): Keyboard {
   return new Keyboard()
@@ -13,6 +12,5 @@ export function getMainReplyKeyboard(): Keyboard {
     .row()
     .text("👤 Profile")
     .text("❓ Help")
-    .resized()
-    .persistent();
+    .resized();
 }

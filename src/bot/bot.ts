@@ -153,12 +153,9 @@ export function createBot(token?: string): Bot {
 
     const userId = ctx.from.id;
 
-    // Handle Reply Keyboard Menu Button presses
+    // Handle Reply Keyboard Menu Button presses & Back/Cancel intents
     if (text === "🍽️ Catat Makanan" || text.toLowerCase() === "catat makanan") {
-      await sessionRepository.setSession(userId, {
-        step: "AWAITING_FOOD_CORRECTION",
-        pendingPhotoId: null,
-      });
+      await sessionRepository.clearSession(userId);
       await ctx.reply(
         `📸 *Cara Catat Makanan:*\n\n` +
           `1. *Kirim Foto Langsung:* Cukup ambil/kirimkan foto makananmu ke chat ini.\n` +
@@ -174,6 +171,7 @@ export function createBot(token?: string): Bot {
       text === "📊 Rekap Hari Ini" ||
       text.toLowerCase() === "rekap hari ini"
     ) {
+      await sessionRepository.clearSession(userId);
       await handleTodayCommand(ctx);
       return;
     }
@@ -183,6 +181,7 @@ export function createBot(token?: string): Bot {
       text.toLowerCase() === "profile" ||
       text.toLowerCase() === "profil"
     ) {
+      await sessionRepository.clearSession(userId);
       await handleProfileCommand(ctx);
       return;
     }
@@ -192,7 +191,22 @@ export function createBot(token?: string): Bot {
       text.toLowerCase() === "help" ||
       text.toLowerCase() === "bantuan"
     ) {
+      await sessionRepository.clearSession(userId);
       await handleHelpCommand(ctx);
+      return;
+    }
+
+    if (
+      text.toLowerCase() === "kembali" ||
+      text.toLowerCase() === "batal" ||
+      text.toLowerCase() === "back" ||
+      text.toLowerCase() === "cancel"
+    ) {
+      await sessionRepository.clearSession(userId);
+      await ctx.reply(
+        "👌 Aksi telah dibatalkan. Silakan pilih menu di bawah atau kirim foto makanan kapan saja.",
+        { parse_mode: "Markdown" },
+      );
       return;
     }
 
