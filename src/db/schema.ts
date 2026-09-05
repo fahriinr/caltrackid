@@ -58,9 +58,24 @@ export const userSessions = pgTable("user_sessions", {
     .notNull(),
 });
 
+export const geminiUsageLogs = pgTable("gemini_usage_logs", {
+  id: varchar("id", { length: 64 }).primaryKey(), // UUID
+  userId: bigint("user_id", { mode: "number" }),
+  type: varchar("type", { length: 20 }).notNull(), // 'PHOTO' | 'TEXT'
+  model: varchar("model", { length: 50 }).notNull().default("gemini-3.6-flash"),
+  status: varchar("status", { length: 20 }).notNull().default("SUCCESS"), // 'SUCCESS' | 'FAILED'
+  durationMs: integer("duration_ms").notNull().default(0),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type FoodLog = typeof foodLogs.$inferSelect;
 export type NewFoodLog = typeof foodLogs.$inferInsert;
 export type UserSession = typeof userSessions.$inferSelect;
 export type NewUserSession = typeof userSessions.$inferInsert;
+export type GeminiUsageLog = typeof geminiUsageLogs.$inferSelect;
+export type NewGeminiUsageLog = typeof geminiUsageLogs.$inferInsert;

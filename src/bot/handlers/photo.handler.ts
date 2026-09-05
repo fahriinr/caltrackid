@@ -6,6 +6,7 @@ import {
 } from "../../repositories/session.repository.js";
 import { foodLogRepository } from "../../repositories/food-log.repository.js";
 import { geminiService } from "../../services/gemini.service.js";
+import { geminiUsageRepository } from "../../repositories/gemini-usage.repository.js";
 import { downloadTelegramPhoto } from "../../utils/telegram.js";
 import { getEnv } from "../../config/env.js";
 import { getTodayBounds } from "../../utils/date.js";
@@ -124,6 +125,7 @@ export async function processFoodAnalysis(
     { parse_mode: "Markdown" },
   );
 
+  const startTime = Date.now();
   try {
     const env = getEnv();
     const { buffer, mimeType } = await downloadTelegramPhoto(
@@ -137,6 +139,18 @@ export async function processFoodAnalysis(
       mimeType,
       userNote,
     );
+
+    const durationMs = Date.now() - startTime;
+    // Log successful photo analysis
+    geminiUsageRepository
+      .createLog({
+        userId,
+        type: "PHOTO",
+        model: "gemini-3.6-flash",
+        status: "SUCCESS",
+        durationMs,
+      })
+      .catch((err) => console.warn("Failed to log Gemini photo usage:", err));
 
     const pendingFood: PendingFoodAnalysis = {
       food_name: result.food_name,
@@ -186,6 +200,18 @@ export async function processFoodAnalysis(
       reply_markup: confirmationKeyboard,
     });
   } catch (error: any) {
+    const durationMs = Date.now() - startTime;
+    geminiUsageRepository
+      .createLog({
+        userId,
+        type: "PHOTO",
+        model: "gemini-3.6-flash",
+        status: "FAILED",
+        durationMs,
+        errorMessage: error?.message || "Unknown error",
+      })
+      .catch((err) => console.warn("Failed to log Gemini photo failure:", err));
+
     console.error("Food analysis error:", error);
 
     try {
@@ -399,8 +425,20 @@ export async function processTextFoodAnalysis(
     { parse_mode: "Markdown" },
   );
 
+  const startTime = Date.now();
   try {
     const result = await geminiService.analyzeFoodText(foodDescription);
+    const durationMs = Date.now() - startTime;
+
+    geminiUsageRepository
+      .createLog({
+        userId,
+        type: "TEXT",
+        model: "gemini-3.6-flash",
+        status: "SUCCESS",
+        durationMs,
+      })
+      .catch((err) => console.warn("Failed to log Gemini text usage:", err));
 
     const pendingFood: PendingFoodAnalysis = {
       food_name: result.food_name || foodDescription,
@@ -447,6 +485,18 @@ export async function processTextFoodAnalysis(
       reply_markup: confirmationKeyboard,
     });
   } catch (error: any) {
+    const durationMs = Date.now() - startTime;
+    geminiUsageRepository
+      .createLog({
+        userId,
+        type: "TEXT",
+        model: "gemini-3.6-flash",
+        status: "FAILED",
+        durationMs,
+        errorMessage: error?.message || "Unknown error",
+      })
+      .catch((err) => console.warn("Failed to log Gemini text failure:", err));
+
     console.error("Text food analysis error:", error);
 
     try {

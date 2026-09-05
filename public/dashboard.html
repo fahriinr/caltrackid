@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CalTrack Admin Dashboard</title>
+    <!-- Tailwind CSS CDN & Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#ecfdf5',
+                500: '#10b981',
+                600: '#059669',
+                700: '#047857',
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 mb-4 border border-emerald-500/20 text-3xl">
+            🥗
+          </div>
+          <h1 class="text-2xl font-bold text-white tracking-tight">CalTrack Admin</h1>
+          <p class="text-sm text-slate-400 mt-1">Masuk untuk mengakses dashboard & analitik</p>
+        </div>
+
+        <form id="loginForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Username</label>
+            <input
+              type="text"
+              id="usernameInput"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+              placeholder="Masukkan username admin"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Password</label>
+            <input
+              type="password"
+              id="passwordInput"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+              placeholder="••••••••"
+            />
+          </div>
+          <div id="loginError" class="hidden p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl"></div>
+          <button
+            type="submit"
+            id="loginBtn"
+            class="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-slate-950 font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 mt-6"
+          >
+            <span>Masuk Dashboard</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MAIN DASHBOARD VIEW -->
+    <div id="dashboardView" class="hidden min-h-screen flex flex-col">
+      <!-- Navbar -->
+      <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">🥗</span>
+            <div>
+              <span class="font-bold text-lg text-white">CalTrack</span>
+              <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full ml-2 font-medium">Admin</span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button
+              onclick="loadAllData()"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-sm flex items-center space-x-1.5"
+              title="Refresh Data"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span class="hidden sm:inline">Refresh</span>
+            </button>
+            <button
+              onclick="logout()"
+              class="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition text-sm font-medium"
+            >
+              Keluar
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <!-- KPI Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total User</div>
+            <div class="mt-2 text-3xl font-extrabold text-white" id="kpiTotalUsers">-</div>
+            <div class="mt-1 text-xs text-emerald-400 flex items-center space-x-1">
+              <span id="kpiActiveUsers">-</span> aktif
+            </div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Makanan Dicatat</div>
+            <div class="mt-2 text-3xl font-extrabold text-white" id="kpiTotalFoodLogs">-</div>
+            <div class="mt-1 text-xs text-emerald-400 flex items-center space-x-1">
+              <span id="kpiTodayFoodLogs">-</span> hari ini
+            </div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Photo Scan (Gemini)</div>
+            <div class="mt-2 text-3xl font-extrabold text-white" id="kpiTotalPhotoScans">-</div>
+            <div class="mt-1 text-xs text-cyan-400 flex items-center space-x-1">
+              <span id="kpiTodayPhotoScans">-</span> scan hari ini
+            </div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Panggilan AI (All)</div>
+            <div class="mt-2 text-3xl font-extrabold text-white" id="kpiTotalGeminiCalls">-</div>
+            <div class="mt-1 text-xs text-slate-400">
+              <span id="kpiTotalTextScans">-</span> input teks
+            </div>
+          </div>
+        </div>
+
+        <!-- Gemini API Usage Chart Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <span>📸 Grafik Penggunaan Gemini API (Photo Scan)</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Tren harian pemindaian foto makanan via Gemini AI</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <select
+                id="chartDaysSelect"
+                onchange="loadStats()"
+                class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="7">7 Hari Terakhir</option>
+                <option value="14" selected>14 Hari Terakhir</option>
+                <option value="30">30 Hari Terakhir</option>
+              </select>
+            </div>
+          </div>
+          <div class="h-72 w-full">
+            <canvas id="usageChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Users Table Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <span>👥 Tabel User Terdaftar</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Daftar pengguna bot Telegram & profil target kalori</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div class="relative">
+                <input
+                  type="text"
+                  id="userSearchInput"
+                  oninput="debounceUserSearch()"
+                  placeholder="Cari ID / username..."
+                  class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-48 sm:w-64"
+                />
+              </div>
+              <select
+                id="userLimitSelect"
+                onchange="changeUserLimit()"
+                class="bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="10">10 / hal</option>
+                <option value="25">25 / hal</option>
+                <option value="50">50 / hal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                  <th class="py-3 px-3">User ID</th>
+                  <th class="py-3 px-3">Username</th>
+                  <th class="py-3 px-3">Gender / Usia</th>
+                  <th class="py-3 px-3">TB / BB</th>
+                  <th class="py-3 px-3">BMI</th>
+                  <th class="py-3 px-3">Target Kalori</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-3">Terdaftar</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="8" class="text-center py-8 text-slate-500">Memuat data pengguna...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- User Pagination -->
+          <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div id="userPaginationInfo">Menampilkan 0 dari 0 data</div>
+            <div class="flex items-center space-x-2">
+              <button
+                id="userPrevBtn"
+                onclick="prevUserPage()"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 transition"
+              >
+                Prev
+              </button>
+              <span id="userCurrentPage" class="font-medium text-slate-200 px-2">1</span>
+              <button
+                id="userNextBtn"
+                onclick="nextUserPage()"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 transition"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Food Logs Table Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <span>🍽️ Tabel Log Makanan User</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Riwayat makanan yang dicatat oleh seluruh pengguna</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="relative">
+                <input
+                  type="text"
+                  id="foodSearchInput"
+                  oninput="debounceFoodSearch()"
+                  placeholder="Cari makanan / ID user..."
+                  class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-48 sm:w-64"
+                />
+              </div>
+              <select
+                id="foodStatusSelect"
+                onchange="loadFoodLogs(1)"
+                class="bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="all">Semua Status</option>
+                <option value="active" selected>Hanya Aktif</option>
+                <option value="deleted">Dihapus (Soft-deleted)</option>
+              </select>
+              <select
+                id="foodLimitSelect"
+                onchange="changeFoodLimit()"
+                class="bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="10">10 / hal</option>
+                <option value="25">25 / hal</option>
+                <option value="50">50 / hal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                  <th class="py-3 px-3">Waktu Log</th>
+                  <th class="py-3 px-3">User</th>
+                  <th class="py-3 px-3">Nama Makanan</th>
+                  <th class="py-3 px-3">Porsi</th>
+                  <th class="py-3 px-3 text-right">Kalori</th>
+                  <th class="py-3 px-3">Makronutrisi (P/K/L)</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-3">Catatan AI</th>
+                </tr>
+              </thead>
+              <tbody id="foodTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="8" class="text-center py-8 text-slate-500">Memuat data makanan...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Food Pagination -->
+          <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div id="foodPaginationInfo">Menampilkan 0 dari 0 data</div>
+            <div class="flex items-center space-x-2">
+              <button
+                id="foodPrevBtn"
+                onclick="prevFoodPage()"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 transition"
+              >
+                Prev
+              </button>
+              <span id="foodCurrentPage" class="font-medium text-slate-200 px-2">1</span>
+              <button
+                id="foodNextBtn"
+                onclick="nextFoodPage()"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 transition"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+      let authToken = localStorage.getItem('caltrack_admin_token') || '';
+      let usageChart = null;
+
+      let currentUserPage = 1;
+      let userTotalPages = 1;
+      let userSearchTimeout = null;
+
+      let currentFoodPage = 1;
+      let foodTotalPages = 1;
+      let foodSearchTimeout = null;
+
+      // Check auth state on start
+      window.addEventListener('DOMContentLoaded', () => {
+        if (authToken) {
+          showDashboard();
+        } else {
+          showLogin();
+        }
+      });
+
+      function showLogin() {
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('dashboardView').classList.add('hidden');
+      }
+
+      function showDashboard() {
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('dashboardView').classList.remove('hidden');
+        loadAllData();
+      }
+
+      function logout() {
+        localStorage.removeItem('caltrack_admin_token');
+        authToken = '';
+        if (usageChart) {
+          usageChart.destroy();
+          usageChart = null;
+        }
+        showLogin();
+      }
+
+      // Handle Login Form Submit
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('usernameInput').value.trim();
+        const password = document.getElementById('passwordInput').value.trim();
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
+
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span>Memverifikasi...</span>';
+        loginError.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/dashboard?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', username, password }),
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success && data.token) {
+            authToken = data.token;
+            localStorage.setItem('caltrack_admin_token', data.token);
+            showDashboard();
+          } else {
+            loginError.textContent = data.error || 'Username atau password tidak sesuai.';
+            loginError.classList.remove('hidden');
+          }
+        } catch (err) {
+          loginError.textContent = 'Gagal menghubungi server. Periksa koneksi internet.';
+          loginError.classList.remove('hidden');
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<span>Masuk Dashboard</span>';
+        }
+      });
+
+      // Unified data loader
+      function loadAllData() {
+        loadStats();
+        loadUsers(1);
+        loadFoodLogs(1);
+      }
+
+      // 1. Load Stats & Usage Chart
+      async function loadStats() {
+        const days = document.getElementById('chartDaysSelect').value;
+        try {
+          const res = await fetch(`/api/dashboard?action=stats&days=${days}`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+
+          if (res.status === 401) {
+            logout();
+            return;
+          }
+
+          const resData = await res.json();
+          if (resData.success) {
+            const kpi = resData.data.kpi;
+            document.getElementById('kpiTotalUsers').textContent = Number(kpi.totalUsers).toLocaleString();
+            document.getElementById('kpiActiveUsers').textContent = Number(kpi.activeUsers).toLocaleString();
+            document.getElementById('kpiTotalFoodLogs').textContent = Number(kpi.totalFoodLogs).toLocaleString();
+            document.getElementById('kpiTodayFoodLogs').textContent = Number(kpi.todayFoodLogs).toLocaleString();
+            document.getElementById('kpiTotalPhotoScans').textContent = Number(kpi.totalPhotoScans).toLocaleString();
+            document.getElementById('kpiTodayPhotoScans').textContent = Number(kpi.todayPhotoScans).toLocaleString();
+            document.getElementById('kpiTotalGeminiCalls').textContent = Number(kpi.totalGeminiCalls).toLocaleString();
+            document.getElementById('kpiTotalTextScans').textContent = Number(kpi.totalTextScans).toLocaleString();
+
+            renderUsageChart(resData.data.chart);
+          }
+        } catch (err) {
+          console.error('Failed to load stats:', err);
+        }
+      }
+
+      function renderUsageChart(chartPoints) {
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const labels = chartPoints.map((p) => p.dayLabel);
+        const photoData = chartPoints.map((p) => p.photoCalls);
+        const textData = chartPoints.map((p) => p.textCalls);
+
+        if (usageChart) {
+          usageChart.destroy();
+        }
+
+        usageChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Photo Scans (AI Vision)',
+                data: photoData,
+                backgroundColor: 'rgba(16, 185, 129, 0.8)', // Emerald
+                borderRadius: 6,
+                borderSkipped: false,
+              },
+              {
+                label: 'Text Analysis (AI Text)',
+                data: textData,
+                backgroundColor: 'rgba(56, 189, 248, 0.6)', // Sky
+                borderRadius: 6,
+                borderSkipped: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              intersect: false,
+              mode: 'index',
+            },
+            plugins: {
+              legend: {
+                labels: { color: '#94a3b8', font: { size: 12 } },
+              },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#f8fafc',
+                bodyColor: '#cbd5e1',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 10,
+              },
+            },
+            scales: {
+              x: {
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: { color: '#94a3b8' },
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                ticks: {
+                  color: '#94a3b8',
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // 2. Load Users Table
+      async function loadUsers(page = 1) {
+        currentUserPage = page;
+        const limit = document.getElementById('userLimitSelect').value;
+        const search = document.getElementById('userSearchInput').value.trim();
+
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-500">Memuat...</td></tr>';
+
+        try {
+          const url = `/api/dashboard?action=users&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+
+          if (res.status === 401) {
+            logout();
+            return;
+          }
+
+          const resData = await res.json();
+          if (resData.success) {
+            const { users, total, totalPages } = resData.data;
+            userTotalPages = totalPages;
+
+            document.getElementById('userCurrentPage').textContent = `${currentUserPage} / ${userTotalPages}`;
+            document.getElementById('userPaginationInfo').textContent = `Menampilkan ${users.length} dari total ${total} pengguna`;
+            document.getElementById('userPrevBtn').disabled = currentUserPage <= 1;
+            document.getElementById('userNextBtn').disabled = currentUserPage >= userTotalPages;
+
+            if (users.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-500">Tidak ada data pengguna ditemukan.</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = users
+              .map((u) => {
+                const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                const genderIcon = u.gender === 'MALE' ? '👨 Laki-laki' : '👩 Perempuan';
+                const statusBadge =
+                  u.status === 'ACTIVE'
+                    ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>'
+                    : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">Inactive</span>';
+
+                return `
+                  <tr class="hover:bg-slate-800/40 transition">
+                    <td class="py-3 px-3 font-mono text-slate-400">${u.id}</td>
+                    <td class="py-3 px-3 font-medium text-white">${u.username ? '@' + u.username : '<span class="text-slate-500">-</span>'}</td>
+                    <td class="py-3 px-3">${genderIcon} (${u.age} th)</td>
+                    <td class="py-3 px-3">${u.height} cm / ${u.weight} kg</td>
+                    <td class="py-3 px-3"><span class="font-semibold text-emerald-400">${u.bmi}</span></td>
+                    <td class="py-3 px-3 font-medium text-white">${u.dailyCalorieTarget} kkal</td>
+                    <td class="py-3 px-3">${statusBadge}</td>
+                    <td class="py-3 px-3 text-slate-400">${dateStr}</td>
+                  </tr>
+                `;
+              })
+              .join('');
+          }
+        } catch (err) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-rose-400">Gagal memuat data pengguna.</td></tr>';
+        }
+      }
+
+      function debounceUserSearch() {
+        clearTimeout(userSearchTimeout);
+        userSearchTimeout = setTimeout(() => loadUsers(1), 350);
+      }
+      function changeUserLimit() {
+        loadUsers(1);
+      }
+      function prevUserPage() {
+        if (currentUserPage > 1) loadUsers(currentUserPage - 1);
+      }
+      function nextUserPage() {
+        if (currentUserPage < userTotalPages) loadUsers(currentUserPage + 1);
+      }
+
+      // 3. Load Food Logs Table
+      async function loadFoodLogs(page = 1) {
+        currentFoodPage = page;
+        const limit = document.getElementById('foodLimitSelect').value;
+        const search = document.getElementById('foodSearchInput').value.trim();
+        const statusFilter = document.getElementById('foodStatusSelect').value;
+
+        let isDeletedQuery = '';
+        if (statusFilter === 'active') isDeletedQuery = '&isDeleted=false';
+        if (statusFilter === 'deleted') isDeletedQuery = '&isDeleted=true';
+
+        const tbody = document.getElementById('foodTableBody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-500">Memuat...</td></tr>';
+
+        try {
+          const url = `/api/dashboard?action=food-logs&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}${isDeletedQuery}`;
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+
+          if (res.status === 401) {
+            logout();
+            return;
+          }
+
+          const resData = await res.json();
+          if (resData.success) {
+            const { logs, total, totalPages } = resData.data;
+            foodTotalPages = totalPages;
+
+            document.getElementById('foodCurrentPage').textContent = `${currentFoodPage} / ${foodTotalPages}`;
+            document.getElementById('foodPaginationInfo').textContent = `Menampilkan ${logs.length} dari total ${total} makanan`;
+            document.getElementById('foodPrevBtn').disabled = currentFoodPage <= 1;
+            document.getElementById('foodNextBtn').disabled = currentFoodPage >= foodTotalPages;
+
+            if (logs.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-500">Tidak ada log makanan ditemukan.</td></tr>';
+              return;
+            }
+
+            tbody.innerHTML = logs
+              .map((l) => {
+                const dateStr = l.loggedAt ? new Date(l.loggedAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+                const userLabel = l.username ? '@' + l.username : l.userId;
+                const statusBadge = l.isDeleted
+                  ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Dihapus</span>'
+                  : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Aktif</span>';
+
+                return `
+                  <tr class="hover:bg-slate-800/40 transition">
+                    <td class="py-3 px-3 text-slate-400 whitespace-nowrap">${dateStr}</td>
+                    <td class="py-3 px-3 font-mono text-slate-300">${userLabel}</td>
+                    <td class="py-3 px-3 font-semibold text-white">${l.foodName}</td>
+                    <td class="py-3 px-3 text-slate-400 max-w-xs truncate">${l.portionDescription || '-'}</td>
+                    <td class="py-3 px-3 text-right font-bold text-emerald-400">${l.calories} kkal</td>
+                    <td class="py-3 px-3 text-slate-300 font-mono">P:${l.protein}g · K:${l.carbs}g · L:${l.fat}g</td>
+                    <td class="py-3 px-3">${statusBadge}</td>
+                    <td class="py-3 px-3 text-slate-400 text-[11px] max-w-xs truncate" title="${l.confidenceNote || ''}">${l.confidenceNote || '-'}</td>
+                  </tr>
+                `;
+              })
+              .join('');
+          }
+        } catch (err) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-rose-400">Gagal memuat log makanan.</td></tr>';
+        }
+      }
+
+      function debounceFoodSearch() {
+        clearTimeout(foodSearchTimeout);
+        foodSearchTimeout = setTimeout(() => loadFoodLogs(1), 350);
+      }
+      function changeFoodLimit() {
+        loadFoodLogs(1);
+      }
+      function prevFoodPage() {
+        if (currentFoodPage > 1) loadFoodLogs(currentFoodPage - 1);
+      }
+      function nextFoodPage() {
+        if (currentFoodPage < foodTotalPages) loadFoodLogs(currentFoodPage + 1);
+      }
+    </script>
+  </body>
+</html>

@@ -53,6 +53,19 @@ export async function runMigrations(dbUrl?: string): Promise<void> {
     );
   `);
 
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS gemini_usage_logs (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id BIGINT,
+      type VARCHAR(20) NOT NULL CHECK(type IN ('PHOTO', 'TEXT')),
+      model VARCHAR(50) NOT NULL DEFAULT 'gemini-3.6-flash',
+      status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS' CHECK(status IN ('SUCCESS', 'FAILED')),
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   // Create indexes for faster queries
   await db.execute(
     sql`CREATE INDEX IF NOT EXISTS idx_food_logs_user_logged ON food_logs(user_id, logged_at);`,
@@ -62,6 +75,12 @@ export async function runMigrations(dbUrl?: string): Promise<void> {
   );
   await db.execute(
     sql`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_gemini_usage_created ON gemini_usage_logs(created_at);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_gemini_usage_type ON gemini_usage_logs(type);`,
   );
 
   console.log("✅ PostgreSQL Database schema initialized successfully.");

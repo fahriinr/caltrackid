@@ -9,6 +9,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().default("./data/nutribot.db"),
   DEFAULT_TIMEZONE: z.string().default("Asia/Jakarta"),
   CRON_SECRET: z.string().optional(),
+  DASHBOARD_USERNAME: z.string().default("admin"),
+  DASHBOARD_PASSWORD: z.string().default("admin123"),
+  DASHBOARD_SECRET: z.string().optional(),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),

@@ -1,6 +1,6 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { getDatabase } from "../db/index.js";
-import { foodLogs, FoodLog, NewFoodLog } from "../db/schema.js";
+import { foodLogs, users, FoodLog, NewFoodLog } from "../db/schema.js";
 import { randomUUID } from "crypto";
 
 export interface DailySummary {
@@ -9,6 +9,18 @@ export interface DailySummary {
   totalCarbs: number;
   totalFat: number;
   logs: FoodLog[];
+}
+
+export interface FoodLogWithUser extends FoodLog {
+  username?: string | null;
+}
+
+export interface PaginatedFoodLogsResult {
+  logs: FoodLogWithUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export class FoodLogRepository {
@@ -99,6 +111,101 @@ export class FoodLogRepository {
       totalCarbs: Math.round(totalCarbs * 10) / 10,
       totalFat: Math.round(totalFat * 10) / 10,
       logs,
+    };
+  }
+
+  async getPaginatedLogs(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isDeleted?: boolean;
+    userId?: number;
+  }): Promise<PaginatedFoodLogsResult> {
+    const db = getDatabase();
+    const page = Math.max(1, options.page || 1);
+    const limit = Math.max(1, Math.min(100, options.limit || 10));
+    const offset = (page - 1) * limit;
+    const search = options.search?.trim();
+
+    const conditions = [];
+
+    if (options.isDeleted !== undefined) {
+      conditions.push(eq(foodLogs.isDeleted, options.isDeleted));
+    }
+
+    if (options.userId !== undefined) {
+      conditions.push(eq(foodLogs.userId, options.userId));
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(foodLogs.foodName, `%${search}%`),
+          ilike(foodLogs.portionDescription, `%${search}%`),
+          sql`CAST(${foodLogs.userId} AS TEXT) LIKE ${`%${search}%`}`,
+        ),
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(foodLogs)
+      .where(whereClause);
+
+    const total = countResult?.count || 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const rows = await db
+      .select({
+        id: foodLogs.id,
+        userId: foodLogs.userId,
+        foodName: foodLogs.foodName,
+        portionDescription: foodLogs.portionDescription,
+        calories: foodLogs.calories,
+        protein: foodLogs.protein,
+        carbs: foodLogs.carbs,
+        fat: foodLogs.fat,
+        confidenceNote: foodLogs.confidenceNote,
+        isDeleted: foodLogs.isDeleted,
+        loggedAt: foodLogs.loggedAt,
+        username: users.username,
+      })
+      .from(foodLogs)
+      .leftJoin(users, eq(foodLogs.userId, users.id))
+      .where(whereClause)
+      .orderBy(desc(foodLogs.loggedAt))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      logs: rows,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  async countTotalStats(zone: string = "Asia/Jakarta"): Promise<{
+    totalLogs: number;
+    todayLogs: number;
+    activeLogs: number;
+  }> {
+    const db = getDatabase();
+    const [res] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        active: sql<number>`count(case when ${foodLogs.isDeleted} = false then 1 end)::int`,
+        today: sql<number>`count(case when ${foodLogs.loggedAt} >= NOW() - INTERVAL '24 hours' then 1 end)::int`,
+      })
+      .from(foodLogs);
+
+    return {
+      totalLogs: res?.total || 0,
+      todayLogs: res?.today || 0,
+      activeLogs: res?.active || 0,
     };
   }
 }

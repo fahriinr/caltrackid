@@ -8,6 +8,9 @@
     },
     "api/recap.ts": {
       "maxDuration": 60
+    },
+    "api/dashboard.ts": {
+      "maxDuration": 60
     }
   }
 }
