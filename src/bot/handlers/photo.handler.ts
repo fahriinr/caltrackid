@@ -7,18 +7,48 @@ import {
 import { foodLogRepository } from "../../repositories/food-log.repository.js";
 import { geminiService } from "../../services/gemini.service.js";
 import { geminiUsageRepository } from "../../repositories/gemini-usage.repository.js";
+import { checkPhotoScanRateLimit } from "../../services/rate-limit.service.js";
 import { downloadTelegramPhoto } from "../../utils/telegram.js";
 import { getEnv } from "../../config/env.js";
 import { getTodayBounds } from "../../utils/date.js";
+
+// Set to track media_group_ids already being processed to avoid duplicate album scans
+const processedMediaGroups = new Set<string>();
 
 export async function handlePhotoReceived(ctx: Context) {
   const userId = ctx.from?.id;
   if (!userId) return;
 
+  // Single-photo album check: Telegram sends each photo in an album with the same media_group_id
+  const mediaGroupId = ctx.message?.media_group_id;
+  if (mediaGroupId) {
+    if (processedMediaGroups.has(mediaGroupId)) {
+      // Ignore additional photos in the same multi-photo album silently
+      return;
+    }
+    processedMediaGroups.add(mediaGroupId);
+    // Cleanup memory
+    setTimeout(() => processedMediaGroups.delete(mediaGroupId), 60000);
+  }
+
   const user = await userRepository.findById(userId);
   if (!user || user.status !== "ACTIVE") {
     await ctx.reply(
       "⚠️ Kamu belum menyelesaikan pendaftaran profil.\n\nSilakan ketik /start terlebih dahulu untuk mendaftar!",
+      { parse_mode: "Markdown" },
+    );
+    return;
+  }
+
+  // Check rate limit and quota (8 photo scans/user/day, 12 req/min, 1200 req/day, with admin bypass)
+  const rateLimitCheck = await checkPhotoScanRateLimit(
+    userId,
+    user.timezone || "Asia/Jakarta",
+  );
+  if (!rateLimitCheck.allowed) {
+    await ctx.reply(
+      rateLimitCheck.message ||
+        "🚫 Batas pemindaian tercapai. Silakan coba kembali nanti.",
       { parse_mode: "Markdown" },
     );
     return;

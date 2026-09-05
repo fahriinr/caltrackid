@@ -19,15 +19,23 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     usageRepo = new GeminiUsageRepository();
 
     const db = getDatabase();
-    await db.execute(sql`DELETE FROM gemini_usage_logs WHERE user_id IN (7771, 7772, 7773);`);
-    await db.execute(sql`DELETE FROM food_logs WHERE user_id IN (7771, 7772, 7773);`);
+    await db.execute(
+      sql`DELETE FROM gemini_usage_logs WHERE user_id IN (7771, 7772, 7773);`,
+    );
+    await db.execute(
+      sql`DELETE FROM food_logs WHERE user_id IN (7771, 7772, 7773);`,
+    );
     await db.execute(sql`DELETE FROM users WHERE id IN (7771, 7772, 7773);`);
   });
 
   afterAll(async () => {
     const db = getDatabase();
-    await db.execute(sql`DELETE FROM gemini_usage_logs WHERE user_id IN (7771, 7772, 7773);`);
-    await db.execute(sql`DELETE FROM food_logs WHERE user_id IN (7771, 7772, 7773);`);
+    await db.execute(
+      sql`DELETE FROM gemini_usage_logs WHERE user_id IN (7771, 7772, 7773);`,
+    );
+    await db.execute(
+      sql`DELETE FROM food_logs WHERE user_id IN (7771, 7772, 7773);`,
+    );
     await db.execute(sql`DELETE FROM users WHERE id IN (7771, 7772, 7773);`);
     closeDatabase();
   });
@@ -101,7 +109,9 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     expect(paginated.total).toBeGreaterThanOrEqual(2);
     expect(paginated.totalPages).toBeGreaterThanOrEqual(2);
 
-    const searched = await userRepo.getPaginatedUsers({ search: "bella_fitness" });
+    const searched = await userRepo.getPaginatedUsers({
+      search: "bella_fitness",
+    });
     expect(searched.users.length).toBe(1);
     expect(searched.users[0].username).toBe("bella_fitness");
   });
@@ -172,11 +182,16 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     expect(resBody.success).toBe(false);
 
     // 2. Valid Login
+    const { getEnv } = await import("../src/config/env.js");
+    const env = getEnv();
     await dashboardHandler(
       {
         method: "POST",
         query: { action: "login" },
-        body: { username: "admin", password: "admin123" },
+        body: {
+          username: env.DASHBOARD_USERNAME || "admin",
+          password: env.DASHBOARD_PASSWORD || "admin123",
+        },
       },
       mockRes,
     );

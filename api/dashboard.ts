@@ -72,7 +72,13 @@ export default async function handler(req: any, res: any) {
   if (req.method === "POST" && action === "login") {
     const { username, password } = req.body || {};
 
-    if (username === configuredUsername && password === configuredPassword) {
+    if (
+      username &&
+      password &&
+      username.trim().toLowerCase() ===
+        configuredUsername.trim().toLowerCase() &&
+      password.trim() === configuredPassword.trim()
+    ) {
       const token = createAuthToken(username, secretKey);
       return res.status(200).json({
         success: true,
@@ -90,10 +96,16 @@ export default async function handler(req: any, res: any) {
 
   // 2. For all other actions, verify Bearer token or authorization header
   const authHeader =
-    req.headers?.authorization || req.headers?.Authorization || "";
+    req.headers?.authorization ||
+    req.headers?.Authorization ||
+    req.headers?.["authorization"] ||
+    req.headers?.["Authorization"] ||
+    "";
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.substring(7).trim()
-    : req.query?.token || "";
+    : authHeader.startsWith("bearer ")
+      ? authHeader.substring(7).trim()
+      : req.query?.token || "";
 
   const authCheck = verifyAuthToken(token, secretKey);
   if (!authCheck.valid) {

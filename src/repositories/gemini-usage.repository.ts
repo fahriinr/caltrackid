@@ -1,6 +1,10 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDatabase } from "../db/index.js";
-import { geminiUsageLogs, GeminiUsageLog, NewGeminiUsageLog } from "../db/schema.js";
+import {
+  geminiUsageLogs,
+  GeminiUsageLog,
+  NewGeminiUsageLog,
+} from "../db/schema.js";
 import { randomUUID } from "crypto";
 import { DateTime } from "luxon";
 
@@ -40,7 +44,10 @@ export class GeminiUsageRepository {
   ): Promise<DailyUsagePoint[]> {
     const db = getDatabase();
     const now = DateTime.now().setZone(zone);
-    const startDate = now.minus({ days: daysCount - 1 }).startOf("day").toJSDate();
+    const startDate = now
+      .minus({ days: daysCount - 1 })
+      .startOf("day")
+      .toJSDate();
     const endDate = now.endOf("day").toJSDate();
 
     const rawLogs = await db
@@ -153,6 +160,77 @@ export class GeminiUsageRepository {
       todayPhotoScans: todayStats?.todayPhoto || 0,
       todayCalls: todayStats?.todayTotal || 0,
     };
+  }
+
+  /**
+   * Returns count of successful photo scans by a specific user today (00:00 - 23:59 WIB)
+   */
+  async getUserTodayPhotoCount(
+    userId: number,
+    zone: string = "Asia/Jakarta",
+  ): Promise<number> {
+    const db = getDatabase();
+    const now = DateTime.now().setZone(zone);
+    const todayStart = now.startOf("day").toJSDate();
+    const todayEnd = now.endOf("day").toJSDate();
+
+    const [res] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(geminiUsageLogs)
+      .where(
+        and(
+          eq(geminiUsageLogs.userId, userId),
+          eq(geminiUsageLogs.type, "PHOTO"),
+          eq(geminiUsageLogs.status, "SUCCESS"),
+          gte(geminiUsageLogs.createdAt, todayStart),
+          lte(geminiUsageLogs.createdAt, todayEnd),
+        ),
+      );
+
+    return res?.count || 0;
+  }
+
+  /**
+   * Returns count of total Gemini API calls across all users in the past 60 seconds
+   */
+  async getGlobalRecentMinuteCount(): Promise<number> {
+    const db = getDatabase();
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+
+    const [res] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(geminiUsageLogs)
+      .where(gte(geminiUsageLogs.createdAt, oneMinuteAgo));
+
+    return res?.count || 0;
+  }
+
+  /**
+   * Returns count of total Gemini API calls across all users today
+   */
+  async getGlobalTodayCount(zone: string = "Asia/Jakarta"): Promise<number> {
+    const db = getDatabase();
+    const now = DateTime.now().setZone(zone);
+    const todayStart = now.startOf("day").toJSDate();
+    const todayEnd = now.endOf("day").toJSDate();
+
+    const [res] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(geminiUsageLogs)
+      .where(
+        and(
+          gte(geminiUsageLogs.createdAt, todayStart),
+          lte(geminiUsageLogs.createdAt, todayEnd),
+        ),
+      );
+
+    return res?.count || 0;
   }
 }
 
