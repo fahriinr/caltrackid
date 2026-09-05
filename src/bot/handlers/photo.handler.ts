@@ -164,7 +164,7 @@ export async function processFoodAnalysis(
       env.TELEGRAM_BOT_TOKEN,
     );
 
-    const result = await geminiService.analyzeFoodImage(
+    const { result, usedModel } = await geminiService.analyzeFoodImage(
       buffer,
       mimeType,
       userNote,
@@ -176,7 +176,7 @@ export async function processFoodAnalysis(
       .createLog({
         userId,
         type: "PHOTO",
-        model: "gemini-3.5-flash-lite",
+        model: usedModel,
         status: "SUCCESS",
         durationMs,
       })
@@ -457,14 +457,15 @@ export async function processTextFoodAnalysis(
 
   const startTime = Date.now();
   try {
-    const result = await geminiService.analyzeFoodText(foodDescription);
+    const { result, usedModel } =
+      await geminiService.analyzeFoodText(foodDescription);
     const durationMs = Date.now() - startTime;
 
     geminiUsageRepository
       .createLog({
         userId,
         type: "TEXT",
-        model: "gemini-3.1-flash-lite",
+        model: usedModel,
         status: "SUCCESS",
         durationMs,
       })

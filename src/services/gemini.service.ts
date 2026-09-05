@@ -38,18 +38,24 @@ Requirements:
 
 export class GeminiService {
   private ai: GoogleGenAI;
-  private photoModelName: string;
-  private textModelName: string;
+  private primaryPhotoModel: string;
+  private fallbackPhotoModel: string;
+  private primaryTextModel: string;
+  private fallbackTextModel: string;
 
   constructor(
     apiKey?: string,
-    photoModelName: string = "gemini-3.5-flash-lite",
-    textModelName: string = "gemini-3.1-flash-lite",
+    primaryPhotoModel: string = "gemini-3.5-flash-lite",
+    fallbackPhotoModel: string = "gemma-4-31b-it",
+    primaryTextModel: string = "gemini-3.1-flash-lite",
+    fallbackTextModel: string = "gemma-4-31b-it",
   ) {
     const key = apiKey || getEnv().GEMINI_API_KEY;
     this.ai = new GoogleGenAI({ apiKey: key });
-    this.photoModelName = photoModelName;
-    this.textModelName = textModelName;
+    this.primaryPhotoModel = primaryPhotoModel;
+    this.fallbackPhotoModel = fallbackPhotoModel;
+    this.primaryTextModel = primaryTextModel;
+    this.fallbackTextModel = fallbackTextModel;
   }
 
   /**
@@ -92,13 +98,14 @@ export class GeminiService {
   }
 
   /**
-   * Analyzes food from an image buffer and an optional user note (uses Gemini 3.5 Flash Lite).
+   * Analyzes food from an image buffer and an optional user note.
+   * Uses Flash Lite first, then auto-fallbacks to Gemma 4 31B if quota/TPD/demand limit hit.
    */
   async analyzeFoodImage(
     imageBuffer: Buffer,
     mimeType: string = "image/jpeg",
     userNote?: string,
-  ): Promise<FoodAnalysisResult> {
+  ): Promise<{ result: FoodAnalysisResult; usedModel: string }> {
     const promptText =
       userNote && userNote.trim().length > 0
         ? `User provided context/note about this food: "${userNote.trim()}". Please analyze the image and the note to estimate the nutritional breakdown accurately.`
@@ -106,156 +113,193 @@ export class GeminiService {
 
     const base64Data = imageBuffer.toString("base64");
 
-    const response = await this.executeWithRetry(() =>
-      this.ai.models.generateContent({
-        model: this.photoModelName,
-        contents: [
-          {
-            inlineData: {
-              mimeType,
-              data: base64Data,
-            },
-          },
-          promptText,
-        ],
-        config: {
-          systemInstruction: SYSTEM_PROMPT,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              food_name: {
-                type: Type.STRING,
-                description: "Nama ringkas hidangan atau menu utama",
-              },
-              portion_description: {
-                type: Type.STRING,
-                description: "Deskripsi porsi yang teridentifikasi",
-              },
-              calories: {
-                type: Type.INTEGER,
-                description: "Estimasi total kalori dalam kkal",
-              },
-              macros: {
-                type: Type.OBJECT,
-                properties: {
-                  protein_g: {
-                    type: Type.NUMBER,
-                    description: "Protein dalam gram",
-                  },
-                  carbs_g: {
-                    type: Type.NUMBER,
-                    description: "Karbohidrat dalam gram",
-                  },
-                  fat_g: {
-                    type: Type.NUMBER,
-                    description: "Lemak dalam gram",
-                  },
-                },
-                required: ["protein_g", "carbs_g", "fat_g"],
-              },
-              confidence_note: {
-                type: Type.STRING,
-                description: "Catatan estimasi nutrisi",
-              },
-            },
-            required: [
-              "food_name",
-              "portion_description",
-              "calories",
-              "macros",
-              "confidence_note",
-            ],
+    const generatePayload = (model: string) => ({
+      model,
+      contents: [
+        {
+          inlineData: {
+            mimeType,
+            data: base64Data,
           },
         },
-      }),
-    );
+        promptText,
+      ],
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            food_name: {
+              type: Type.STRING,
+              description: "Nama ringkas hidangan atau menu utama",
+            },
+            portion_description: {
+              type: Type.STRING,
+              description: "Deskripsi porsi yang teridentifikasi",
+            },
+            calories: {
+              type: Type.INTEGER,
+              description: "Estimasi total kalori dalam kkal",
+            },
+            macros: {
+              type: Type.OBJECT,
+              properties: {
+                protein_g: {
+                  type: Type.NUMBER,
+                  description: "Protein dalam gram",
+                },
+                carbs_g: {
+                  type: Type.NUMBER,
+                  description: "Karbohidrat dalam gram",
+                },
+                fat_g: {
+                  type: Type.NUMBER,
+                  description: "Lemak dalam gram",
+                },
+              },
+              required: ["protein_g", "carbs_g", "fat_g"],
+            },
+            confidence_note: {
+              type: Type.STRING,
+              description: "Catatan estimasi nutrisi",
+            },
+          },
+          required: [
+            "food_name",
+            "portion_description",
+            "calories",
+            "macros",
+            "confidence_note",
+          ],
+        },
+      },
+    });
 
-    const text = response.text;
+    let usedModel = this.primaryPhotoModel;
+    let response: any;
+
+    try {
+      response = await this.executeWithRetry(() =>
+        this.ai.models.generateContent(generatePayload(this.primaryPhotoModel)),
+      );
+    } catch (primaryError: any) {
+      console.warn(
+        `⚠️ Primary photo model ${this.primaryPhotoModel} failed (${primaryError?.message}). Falling back to ${this.fallbackPhotoModel}...`,
+      );
+      usedModel = this.fallbackPhotoModel;
+      response = await this.executeWithRetry(() =>
+        this.ai.models.generateContent(
+          generatePayload(this.fallbackPhotoModel),
+        ),
+      );
+    }
+
+    const text = response?.text;
     if (!text) {
-      throw new Error("No response returned from Gemini API");
+      throw new Error("No response returned from Gemini/Gemma API");
     }
 
     try {
-      // In case there are markdown code fences despite responseMimeType
       const cleanJson = text
         .replace(/^```json\s*/i, "")
         .replace(/```\s*$/i, "")
         .trim();
       const parsed = JSON.parse(cleanJson);
-      return foodAnalysisSchema.parse(parsed);
+      return {
+        result: foodAnalysisSchema.parse(parsed),
+        usedModel,
+      };
     } catch (parseError) {
-      console.error("Failed to parse Gemini response JSON:", text, parseError);
-      throw new Error("Gagal mengurai respons nutrisi dari Gemini API.");
+      console.error("Failed to parse AI response JSON:", text, parseError);
+      throw new Error("Gagal mengurai respons nutrisi dari AI.");
     }
   }
 
   /**
-   * Analyzes food from a pure textual description (uses Gemini 3.1 Flash Lite).
+   * Analyzes food from a pure textual description.
+   * Uses Flash Lite first, then auto-fallbacks to Gemma 4 31B if quota/TPD/demand limit hit.
    */
-  async analyzeFoodText(textDescription: string): Promise<FoodAnalysisResult> {
+  async analyzeFoodText(
+    textDescription: string,
+  ): Promise<{ result: FoodAnalysisResult; usedModel: string }> {
     const promptText = `Estimate the nutritional breakdown for this food/beverage described by the user: "${textDescription.trim()}". Identify the components, estimate standard portion sizes, calculate calories in kcal, and estimate macronutrients (protein, carbs, fat in grams).`;
 
-    const response = await this.executeWithRetry(() =>
-      this.ai.models.generateContent({
-        model: this.textModelName,
-        contents: [promptText],
-        config: {
-          systemInstruction: SYSTEM_PROMPT,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              food_name: {
-                type: Type.STRING,
-                description: "Nama ringkas hidangan atau menu utama",
-              },
-              portion_description: {
-                type: Type.STRING,
-                description: "Deskripsi porsi yang teridentifikasi",
-              },
-              calories: {
-                type: Type.INTEGER,
-                description: "Estimasi total kalori dalam kkal",
-              },
-              macros: {
-                type: Type.OBJECT,
-                properties: {
-                  protein_g: {
-                    type: Type.NUMBER,
-                    description: "Protein dalam gram",
-                  },
-                  carbs_g: {
-                    type: Type.NUMBER,
-                    description: "Karbohidrat dalam gram",
-                  },
-                  fat_g: {
-                    type: Type.NUMBER,
-                    description: "Lemak dalam gram",
-                  },
-                },
-                required: ["protein_g", "carbs_g", "fat_g"],
-              },
-              confidence_note: {
-                type: Type.STRING,
-                description: "Catatan estimasi nutrisi",
-              },
+    const generatePayload = (model: string) => ({
+      model,
+      contents: [promptText],
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            food_name: {
+              type: Type.STRING,
+              description: "Nama ringkas hidangan atau menu utama",
             },
-            required: [
-              "food_name",
-              "portion_description",
-              "calories",
-              "macros",
-              "confidence_note",
-            ],
+            portion_description: {
+              type: Type.STRING,
+              description: "Deskripsi porsi yang teridentifikasi",
+            },
+            calories: {
+              type: Type.INTEGER,
+              description: "Estimasi total kalori dalam kkal",
+            },
+            macros: {
+              type: Type.OBJECT,
+              properties: {
+                protein_g: {
+                  type: Type.NUMBER,
+                  description: "Protein dalam gram",
+                },
+                carbs_g: {
+                  type: Type.NUMBER,
+                  description: "Karbohidrat dalam gram",
+                },
+                fat_g: {
+                  type: Type.NUMBER,
+                  description: "Lemak dalam gram",
+                },
+              },
+              required: ["protein_g", "carbs_g", "fat_g"],
+            },
+            confidence_note: {
+              type: Type.STRING,
+              description: "Catatan estimasi nutrisi",
+            },
           },
+          required: [
+            "food_name",
+            "portion_description",
+            "calories",
+            "macros",
+            "confidence_note",
+          ],
         },
-      }),
-    );
+      },
+    });
 
-    const text = response.text;
+    let usedModel = this.primaryTextModel;
+    let response: any;
+
+    try {
+      response = await this.executeWithRetry(() =>
+        this.ai.models.generateContent(generatePayload(this.primaryTextModel)),
+      );
+    } catch (primaryError: any) {
+      console.warn(
+        `⚠️ Primary text model ${this.primaryTextModel} failed (${primaryError?.message}). Falling back to ${this.fallbackTextModel}...`,
+      );
+      usedModel = this.fallbackTextModel;
+      response = await this.executeWithRetry(() =>
+        this.ai.models.generateContent(generatePayload(this.fallbackTextModel)),
+      );
+    }
+
+    const text = response?.text;
     if (!text) {
-      throw new Error("No response returned from Gemini API");
+      throw new Error("No response returned from Gemini/Gemma API");
     }
 
     try {
@@ -264,14 +308,13 @@ export class GeminiService {
         .replace(/```\s*$/i, "")
         .trim();
       const parsed = JSON.parse(cleanJson);
-      return foodAnalysisSchema.parse(parsed);
+      return {
+        result: foodAnalysisSchema.parse(parsed),
+        usedModel,
+      };
     } catch (parseError) {
-      console.error(
-        "Failed to parse Gemini text response JSON:",
-        text,
-        parseError,
-      );
-      throw new Error("Gagal mengurai respons nutrisi dari Gemini API.");
+      console.error("Failed to parse AI text response JSON:", text, parseError);
+      throw new Error("Gagal mengurai respons nutrisi dari AI.");
     }
   }
 }
