@@ -464,7 +464,7 @@ export async function processTextFoodAnalysis(
       .createLog({
         userId,
         type: "TEXT",
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         status: "SUCCESS",
         durationMs,
       })
@@ -520,7 +520,7 @@ export async function processTextFoodAnalysis(
       .createLog({
         userId,
         type: "TEXT",
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         status: "FAILED",
         durationMs,
         errorMessage: error?.message || "Unknown error",

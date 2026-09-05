@@ -38,12 +38,18 @@ Requirements:
 
 export class GeminiService {
   private ai: GoogleGenAI;
-  private modelName: string;
+  private photoModelName: string;
+  private textModelName: string;
 
-  constructor(apiKey?: string, modelName: string = "gemini-3.5-flash-lite") {
+  constructor(
+    apiKey?: string,
+    photoModelName: string = "gemini-3.5-flash-lite",
+    textModelName: string = "gemini-3.1-flash-lite",
+  ) {
     const key = apiKey || getEnv().GEMINI_API_KEY;
     this.ai = new GoogleGenAI({ apiKey: key });
-    this.modelName = modelName;
+    this.photoModelName = photoModelName;
+    this.textModelName = textModelName;
   }
 
   /**
@@ -86,7 +92,7 @@ export class GeminiService {
   }
 
   /**
-   * Analyzes food from an image buffer and an optional user note.
+   * Analyzes food from an image buffer and an optional user note (uses Gemini 3.5 Flash Lite).
    */
   async analyzeFoodImage(
     imageBuffer: Buffer,
@@ -102,7 +108,7 @@ export class GeminiService {
 
     const response = await this.executeWithRetry(() =>
       this.ai.models.generateContent({
-        model: this.modelName,
+        model: this.photoModelName,
         contents: [
           {
             inlineData: {
@@ -185,14 +191,14 @@ export class GeminiService {
   }
 
   /**
-   * Analyzes food from a pure textual description (e.g. "Tadi siang makan nasi padang rendang dan es teh tawar").
+   * Analyzes food from a pure textual description (uses Gemini 3.1 Flash Lite).
    */
   async analyzeFoodText(textDescription: string): Promise<FoodAnalysisResult> {
     const promptText = `Estimate the nutritional breakdown for this food/beverage described by the user: "${textDescription.trim()}". Identify the components, estimate standard portion sizes, calculate calories in kcal, and estimate macronutrients (protein, carbs, fat in grams).`;
 
     const response = await this.executeWithRetry(() =>
       this.ai.models.generateContent({
-        model: this.modelName,
+        model: this.textModelName,
         contents: [promptText],
         config: {
           systemInstruction: SYSTEM_PROMPT,

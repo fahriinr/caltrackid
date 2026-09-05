@@ -60,7 +60,7 @@ describe("Admin Dashboard & Gemini Usage Tracking", () => {
     await usageRepo.createLog({
       userId: 7772,
       type: "TEXT",
-      model: "gemini-3.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       status: "SUCCESS",
       durationMs: 850,
     });
