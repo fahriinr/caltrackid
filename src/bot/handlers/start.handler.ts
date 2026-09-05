@@ -5,6 +5,7 @@ import {
   OnboardingTempData,
 } from "../../repositories/session.repository.js";
 import { calculateBodyMetrics } from "../../services/nutrition.service.js";
+import { getMainReplyKeyboard } from "../keyboards/main.keyboard.js";
 
 export async function handleStartCommand(ctx: Context) {
   const userId = ctx.from?.id;
@@ -13,20 +14,14 @@ export async function handleStartCommand(ctx: Context) {
   const existingUser = await userRepository.findById(userId);
 
   if (existingUser && existingUser.status === "ACTIVE") {
-    const keyboard = new InlineKeyboard()
-      .text("📊 Cek Hari Ini (/today)", "action_today")
-      .row()
-      .text("👤 Profil Saya (/profile)", "action_profile")
-      .row()
-      .text("🔄 Hitung Ulang Profil", "action_restart_onboarding");
-
+    // Send persistent reply keyboard
     await ctx.reply(
       `👋 Halo kembali, *${ctx.from.first_name || "Sobat Sehat"}*!\n\n` +
         `Cal siap bantu pantau asupan kalorimu hari ini.\n\n` +
         `🎯 *Target Kalori Harian:* ${existingUser.dailyCalorieTarget} kkal\n` +
         `⚖️ *BMI:* ${existingUser.bmi} (${existingUser.gender === "MALE" ? "Laki-laki" : "Perempuan"}, ${existingUser.weight} kg / ${existingUser.height} cm)\n\n` +
-        `📸 *Cara Pakai:* Cukup kirimkan *foto makananmu* ke chat ini atau ketik langsung apa yang kamu makan, dan Cal akan otomatis menghitung kalori serta nutrisinya!`,
-      { parse_mode: "Markdown", reply_markup: keyboard },
+        `📸 *Cara Pakai:* Cukup kirimkan *foto makananmu* ke chat ini atau gunakan menu tombol di bawah untuk navigasi cepat.`,
+      { parse_mode: "Markdown", reply_markup: getMainReplyKeyboard() },
     );
     return;
   }
@@ -298,8 +293,8 @@ async function completeRegistration(
       `• TB / BB: ${tempData.height} cm / ${tempData.weight} kg (BMI: ${metrics.bmi} - ${metrics.bmiCategory})\n` +
       `• Target Kalori Harian: *${targetCalories} kkal*\n\n` +
       `📸 *Mulai Logging Makanan:*\n` +
-      `Kirimkan foto makanan atau minumanmu ke chat ini kapan saja! Bot akan menganalisis porsi dan kalorinya untukmu.\n\n` +
-      `Ketik /today untuk melihat progres harian atau /help untuk bantuan.`,
-    { parse_mode: "Markdown" },
+      `Kirimkan foto makanan atau minumanmu ke chat ini kapan saja! Cal akan otomatis menganalisis porsi dan kalorinya untukmu.\n\n` +
+      `Gunakan tombol menu di bawah untuk akses cepat menu bot!`,
+    { parse_mode: "Markdown", reply_markup: getMainReplyKeyboard() },
   );
 }

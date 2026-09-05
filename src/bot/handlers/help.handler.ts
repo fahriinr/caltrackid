@@ -1,5 +1,6 @@
 import { Context } from "grammy";
 import { sessionRepository } from "../../repositories/session.repository.js";
+import { getMainReplyKeyboard } from "../keyboards/main.keyboard.js";
 
 export async function handleHelpCommand(ctx: Context) {
   const helpText =
@@ -21,7 +22,10 @@ export async function handleHelpCommand(ctx: Context) {
     `4. *Hapus / Edit Log:* Jika salah catat, kamu bisa hapus log makanan dari tombol setelah mencatat atau lewat menu /today.\n\n` +
     `⏰ *Rekap Otomatis:* Cal akan mengirimkan laporan rekap harian setiap pukul *21:00 WIB*.`;
 
-  await ctx.reply(helpText, { parse_mode: "Markdown" });
+  await ctx.reply(helpText, {
+    parse_mode: "Markdown",
+    reply_markup: getMainReplyKeyboard(),
+  });
 }
 
 export async function handleCancelCommand(ctx: Context) {

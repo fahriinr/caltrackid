@@ -152,6 +152,50 @@ export function createBot(token?: string): Bot {
     if (text.startsWith("/")) return; // Skip commands
 
     const userId = ctx.from.id;
+
+    // Handle Reply Keyboard Menu Button presses
+    if (text === "🍽️ Catat Makanan" || text.toLowerCase() === "catat makanan") {
+      await sessionRepository.setSession(userId, {
+        step: "AWAITING_FOOD_CORRECTION",
+        pendingPhotoId: null,
+      });
+      await ctx.reply(
+        `📸 *Cara Catat Makanan:*\n\n` +
+          `1. *Kirim Foto Langsung:* Cukup ambil/kirimkan foto makananmu ke chat ini.\n` +
+          `2. *Ketik Teks Manual:* Ketik nama makanan & porsinya langsung di chat atau gunakan format:\n` +
+          `   \`/catat <nama makanan & porsi>\`\n` +
+          `   _(Contoh: "Nasi padang ayam bakar, es teh tawar")_`,
+        { parse_mode: "Markdown" },
+      );
+      return;
+    }
+
+    if (
+      text === "📊 Rekap Hari Ini" ||
+      text.toLowerCase() === "rekap hari ini"
+    ) {
+      await handleTodayCommand(ctx);
+      return;
+    }
+
+    if (
+      text === "👤 Profile" ||
+      text.toLowerCase() === "profile" ||
+      text.toLowerCase() === "profil"
+    ) {
+      await handleProfileCommand(ctx);
+      return;
+    }
+
+    if (
+      text === "❓ Help" ||
+      text.toLowerCase() === "help" ||
+      text.toLowerCase() === "bantuan"
+    ) {
+      await handleHelpCommand(ctx);
+      return;
+    }
+
     const session = await sessionRepository.getSession(userId);
 
     switch (session.step) {
