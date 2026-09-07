@@ -16,10 +16,16 @@ export async function runMigrations(dbUrl?: string): Promise<void> {
       bmi DOUBLE PRECISION NOT NULL,
       daily_calorie_target INTEGER NOT NULL,
       status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'INACTIVE')),
+      notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
       timezone VARCHAR(50) NOT NULL DEFAULT 'Asia/Jakarta',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  // Ensure notifications_enabled column exists on existing users table
+  await db.execute(sql`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE;
   `);
 
   await db.execute(sql`

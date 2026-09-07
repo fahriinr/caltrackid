@@ -122,15 +122,15 @@ export async function runDailyRecap(
   }
 
   console.log("⏰ Running daily 21:00 WIB recap job...");
-  const activeUsers = await userRepository.listActiveUsers();
-  console.log(`Found ${activeUsers.length} active users for daily recap.`);
+  const subscribers = await userRepository.listRecapSubscribers();
+  console.log(`Found ${subscribers.length} subscribers for daily recap.`);
 
-  for (let i = 0; i < activeUsers.length; i++) {
-    const user = activeUsers[i];
+  for (let i = 0; i < subscribers.length; i++) {
+    const user = subscribers[i];
     await sendUserDailyRecap(bot, user.id);
 
     // Add safe 40ms pacing delay between users to stay comfortably under Telegram's 30 msg/sec limit
-    if (i < activeUsers.length - 1) {
+    if (i < subscribers.length - 1) {
       await sleep(40);
     }
   }

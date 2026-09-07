@@ -75,9 +75,37 @@ export class UserRepository {
     return rows[0] || null;
   }
 
+  async updateNotificationPreference(
+    userId: number,
+    notificationsEnabled: boolean,
+  ): Promise<User | null> {
+    const db = getDatabase();
+    const rows = await db
+      .update(users)
+      .set({
+        notificationsEnabled,
+        status: "ACTIVE", // keep user active
+        updatedAt: sql`NOW()`,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return rows[0] || null;
+  }
+
   async listActiveUsers(): Promise<User[]> {
     const db = getDatabase();
     return db.select().from(users).where(eq(users.status, "ACTIVE"));
+  }
+
+  async listRecapSubscribers(): Promise<User[]> {
+    const db = getDatabase();
+    return db
+      .select()
+      .from(users)
+      .where(
+        sql`${users.status} = 'ACTIVE' AND (${users.notificationsEnabled} IS TRUE OR ${users.notificationsEnabled} IS NULL)`,
+      );
   }
 
   async getPaginatedUsers(options: {

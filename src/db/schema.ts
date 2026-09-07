@@ -19,6 +19,9 @@ export const users = pgTable("users", {
   bmi: doublePrecision("bmi").notNull(),
   dailyCalorieTarget: integer("daily_calorie_target").notNull(),
   status: varchar("status", { length: 20 }).default("ACTIVE").notNull(), // 'ACTIVE' / 'INACTIVE'
+  notificationsEnabled: boolean("notifications_enabled")
+    .default(true)
+    .notNull(), // true = receive 21:00 WIB daily recap
   timezone: varchar("timezone", { length: 50 })
     .default("Asia/Jakarta")
     .notNull(),

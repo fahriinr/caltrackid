@@ -23,21 +23,20 @@ export async function handleProfileCommand(ctx: Context) {
     user.weight,
   );
 
-  const statusText =
-    user.status === "ACTIVE"
-      ? "🔔 Notifikasi Harian Aktif (21:00 WIB)"
-      : "🔕 Notifikasi Harian Nonaktif";
+  const isNotifActive = user.notificationsEnabled !== false;
+  const statusText = isNotifActive
+    ? "🔔 Notifikasi Harian Aktif (21:00 WIB)"
+    : "🔕 Notifikasi Harian Nonaktif";
 
-  const toggleNotifButton =
-    user.status === "ACTIVE"
-      ? {
-          text: "🔕 Matikan Notifikasi Harian",
-          data: "action_unsubscribe_notif",
-        }
-      : {
-          text: "🔔 Aktifkan Notifikasi Harian",
-          data: "action_subscribe_notif",
-        };
+  const toggleNotifButton = isNotifActive
+    ? {
+        text: "🔕 Matikan Notifikasi Harian",
+        data: "action_unsubscribe_notif",
+      }
+    : {
+        text: "🔔 Aktifkan Notifikasi Harian",
+        data: "action_subscribe_notif",
+      };
 
   const keyboard = new InlineKeyboard()
     .text("🎯 Ubah Target Kalori", "action_change_target")
@@ -74,12 +73,12 @@ export async function handleUnsubscribeCommand(ctx: Context) {
     return;
   }
 
-  await userRepository.updateStatus(userId, "INACTIVE");
+  await userRepository.updateNotificationPreference(userId, false);
   await ctx.reply(
     `🔕 *Notifikasi Rekap Harian Dinonaktifkan*\n\n` +
       `Kamu tidak akan lagi menerima pesan rekap otomatis pukul 21:00 WIB.\n\n` +
       `👉 *Catatan:*\n` +
-      `• Kamu tetap bisa mencatat makanan dan melihat rekap harian kapan saja menggunakan \`/today\`.\n` +
+      `• Akunmu tetap aktif! Kamu tetap bebas mencatat makanan, foto, dan melihat rekap kapan saja via \`/today\` dan \`/week\`.\n` +
       `• Untuk mengaktifkan kembali notifikasi rekap malam, ketik perintah \`/subscribe\`.`,
     { parse_mode: "Markdown" },
   );
@@ -95,7 +94,7 @@ export async function handleSubscribeCommand(ctx: Context) {
     return;
   }
 
-  await userRepository.updateStatus(userId, "ACTIVE");
+  await userRepository.updateNotificationPreference(userId, true);
   await ctx.reply(
     `🔔 *Notifikasi Rekap Harian Diaktifkan!*\n\n` +
       `Cal akan mengirimkan ringkasan nutrisi harianmu setiap malam pukul *21:00 WIB*.\n\n` +
