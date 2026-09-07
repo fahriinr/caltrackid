@@ -32,6 +32,8 @@ import {
   handleProfileCommand,
   handleSetTargetCommand,
   handleTargetUpdateInput,
+  handleUnsubscribeCommand,
+  handleSubscribeCommand,
 } from "./handlers/profile.handler.js";
 import {
   handleHelpCommand,
@@ -54,6 +56,11 @@ export function createBot(token?: string): Bot {
   bot.command(["week", "minggu"], handleWeekCommand);
   bot.command("profile", handleProfileCommand);
   bot.command("settarget", handleSetTargetCommand);
+  bot.command(
+    ["unsubscribe", "unsub", "matikanrekap"],
+    handleUnsubscribeCommand,
+  );
+  bot.command(["subscribe", "sub", "aktifkanrekap"], handleSubscribeCommand);
   bot.command("help", handleHelpCommand);
   bot.command("cancel", handleCancelCommand);
 
@@ -134,6 +141,14 @@ export function createBot(token?: string): Bot {
   bot.callbackQuery("action_change_target", async (ctx) => {
     await ctx.answerCallbackQuery();
     await handleSetTargetCommand(ctx);
+  });
+  bot.callbackQuery("action_unsubscribe_notif", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleUnsubscribeCommand(ctx);
+  });
+  bot.callbackQuery("action_subscribe_notif", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleSubscribeCommand(ctx);
   });
   bot.callbackQuery("action_restart_onboarding", async (ctx) => {
     await ctx.answerCallbackQuery();
@@ -275,8 +290,16 @@ export async function setupBotCommands(bot: Bot) {
         command: "catat",
         description: "Catat makanan via teks (tanpa foto)",
       },
-      { command: "profile", description: "Lihat data fisik & target kalori" },
+      { command: "profile", description: "Lihat profil & target kalori" },
       { command: "settarget", description: "Ubah target kalori harian" },
+      {
+        command: "unsubscribe",
+        description: "Matikan notifikasi rekap malam 21:00",
+      },
+      {
+        command: "subscribe",
+        description: "Aktifkan notifikasi rekap malam 21:00",
+      },
       { command: "help", description: "Panduan cara penggunaan bot" },
       { command: "cancel", description: "Batalkan aksi yang sedang berjalan" },
       { command: "start", description: "Mulai / daftar ulang profil" },

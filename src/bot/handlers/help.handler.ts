@@ -11,8 +11,10 @@ export async function handleHelpCommand(ctx: Context) {
     `• /today - Melihat ringkasan asupan kalori & menu hari ini\n` +
     `• /week - Melihat rekap kalori per hari selama 7 hari terakhir\n` +
     `• /catat <makanan> - Mencatat makanan via teks (misal lupa foto)\n` +
-    `• /profile - Melihat profil fisik, BMI, BMR, dan target kalori\n` +
+    `• /profile - Melihat profil fisik, BMI, target, dan status notifikasi\n` +
     `• /settarget - Mengubah batas target kalori harianmu\n` +
+    `• /unsubscribe - Mematikan pesan rekap otomatis pukul 21:00 WIB\n` +
+    `• /subscribe - Mengaktifkan kembali pesan rekap otomatis\n` +
     `• /help - Menampilkan panduan dan daftar perintah\n` +
     `• /cancel - Membatalkan proses yang sedang berjalan\n\n` +
     `📸 *Cara Mencatat Makanan:*\n` +

@@ -58,6 +58,23 @@ export class UserRepository {
     return rows[0] || null;
   }
 
+  async updateStatus(
+    userId: number,
+    status: "ACTIVE" | "INACTIVE",
+  ): Promise<User | null> {
+    const db = getDatabase();
+    const rows = await db
+      .update(users)
+      .set({
+        status,
+        updatedAt: sql`NOW()`,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return rows[0] || null;
+  }
+
   async listActiveUsers(): Promise<User[]> {
     const db = getDatabase();
     return db.select().from(users).where(eq(users.status, "ACTIVE"));

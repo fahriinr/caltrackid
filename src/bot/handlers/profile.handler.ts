@@ -23,8 +23,26 @@ export async function handleProfileCommand(ctx: Context) {
     user.weight,
   );
 
+  const statusText =
+    user.status === "ACTIVE"
+      ? "🔔 Notifikasi Harian Aktif (21:00 WIB)"
+      : "🔕 Notifikasi Harian Nonaktif";
+
+  const toggleNotifButton =
+    user.status === "ACTIVE"
+      ? {
+          text: "🔕 Matikan Notifikasi Harian",
+          data: "action_unsubscribe_notif",
+        }
+      : {
+          text: "🔔 Aktifkan Notifikasi Harian",
+          data: "action_subscribe_notif",
+        };
+
   const keyboard = new InlineKeyboard()
     .text("🎯 Ubah Target Kalori", "action_change_target")
+    .row()
+    .text(toggleNotifButton.text, toggleNotifButton.data)
     .row()
     .text("🔄 Hitung Ulang Profil", "action_restart_onboarding");
 
@@ -39,10 +57,51 @@ export async function handleProfileCommand(ctx: Context) {
     `• *BMI:* *${user.bmi}* (${metrics.bmiCategory})\n` +
     `• *BMR / TDEE:* ${metrics.bmr} kkal / ${metrics.tdee} kkal\n` +
     `• *Target Kalori:* *${user.dailyCalorieTarget} kkal/hari*\n` +
+    `• *Status Notifikasi:* ${statusText}\n` +
     `• *Zona Waktu:* ${user.timezone}\n\n` +
-    `Pilih menu di bawah untuk mengubah target atau memperbarui profil.`;
+    `Pilih menu di bawah untuk mengubah target atau pengaturan notifikasi.`;
 
   await ctx.reply(response, { parse_mode: "Markdown", reply_markup: keyboard });
+}
+
+export async function handleUnsubscribeCommand(ctx: Context) {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    await ctx.reply("⚠️ Kamu belum mendaftar. Silakan ketik /start.");
+    return;
+  }
+
+  await userRepository.updateStatus(userId, "INACTIVE");
+  await ctx.reply(
+    `🔕 *Notifikasi Rekap Harian Dinonaktifkan*\n\n` +
+      `Kamu tidak akan lagi menerima pesan rekap otomatis pukul 21:00 WIB.\n\n` +
+      `👉 *Catatan:*\n` +
+      `• Kamu tetap bisa mencatat makanan dan melihat rekap harian kapan saja menggunakan \`/today\`.\n` +
+      `• Untuk mengaktifkan kembali notifikasi rekap malam, ketik perintah \`/subscribe\`.`,
+    { parse_mode: "Markdown" },
+  );
+}
+
+export async function handleSubscribeCommand(ctx: Context) {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    await ctx.reply("⚠️ Kamu belum mendaftar. Silakan ketik /start.");
+    return;
+  }
+
+  await userRepository.updateStatus(userId, "ACTIVE");
+  await ctx.reply(
+    `🔔 *Notifikasi Rekap Harian Diaktifkan!*\n\n` +
+      `Cal akan mengirimkan ringkasan nutrisi harianmu setiap malam pukul *21:00 WIB*.\n\n` +
+      `Untuk mematikannya kembali kapan saja, ketik \`/unsubscribe\`.`,
+    { parse_mode: "Markdown" },
+  );
 }
 
 export async function handleSetTargetCommand(ctx: Context) {

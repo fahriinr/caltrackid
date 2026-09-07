@@ -64,7 +64,7 @@ export async function sendUserDailyRecap(
         .join("\n");
 
       message =
-        `*REKAP HARIAN CALTRACK* (21:00 WIB)\n` +
+        `*REKAP HARIAN CALTRACK*\n` +
         `_${todayBounds.displayDate}_\n\n` +
         `${statusEvaluation}\n\n` +
         `*Ringkasan Makronutrisi*\n` +
